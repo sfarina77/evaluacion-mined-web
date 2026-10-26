@@ -1,0 +1,10 @@
+{
+  "name": "evaluacion-mined-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cliente web (PWA) de Evaluación MINED para Chromebooks -- ver README.md antes de asumir que esto tiene el mismo nivel de bloqueo que el cliente Android.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

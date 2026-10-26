@@ -1,0 +1,7 @@
+Faltan icono-192.png e icono-512.png (referenciados en manifest.json).
+
+No se pudieron generar acá porque este entorno no tiene herramientas para producir
+imágenes rasterizadas. Sin estos archivos la PWA igual funciona e instala, solo
+usa un ícono genérico del navegador en vez del propio -- no es bloqueante para
+seguir desarrollando, pero hay que resolverlo antes de distribuirla de verdad
+(mismo caso que el ícono placeholder del cliente Android, ver su README).

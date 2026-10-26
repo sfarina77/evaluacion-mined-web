@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es-SV">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Evaluación MINED</title>
+<link rel="manifest" href="public/manifest.json" />
+<link rel="stylesheet" href="src/estilos.css" />
+</head>
+<body>
+
+  <main id="vista-login" class="pantalla">
+    <div class="tarjeta-login">
+      <h1>SISTEMA DE EVALUACIÓN SEGURO</h1>
+      <p class="subtitulo">Identifícate y escribe el código de la prueba asignado por tu docente.</p>
+      <input id="campo-nie" type="text" placeholder="NIE del estudiante" autocomplete="username" />
+      <input id="campo-codigo" type="text" placeholder="Código del Examen (Ej: EXAM101)" />
+      <p id="mensaje-error" class="mensaje-error" hidden></p>
+      <div class="fila-botones">
+        <button id="boton-iniciar" class="boton boton-primario">Iniciar Evaluación</button>
+        <button id="boton-cancelar" class="boton boton-secundario">Cancelar</button>
+      </div>
+    </div>
+  </main>
+
+  <main id="vista-examen" class="pantalla" hidden>
+    <iframe id="marco-examen" title="Examen" allow="fullscreen"></iframe>
+
+    <div id="banner-aviso" class="banner-aviso" hidden></div>
+
+    <div id="overlay-bloqueo" class="overlay-bloqueo" hidden>
+      <p>Regresa frente a la cámara para continuar.</p>
+    </div>
+
+    <!-- Punto de salida controlada: mantener presionado para pedir el PIN.
+         No es un botón de "salir del examen" visible, es el disparador del
+         diálogo de PIN (mismo criterio que el gatillo de la app Android). -->
+    <button id="gatillo-salida-pin" class="gatillo-salida" aria-label="Salida controlada"></button>
+  </main>
+
+  <dialog id="dialogo-pin">
+    <form method="dialog" id="form-pin">
+      <h2>Salida controlada</h2>
+      <p>Ingresa el PIN de salida para terminar la supervisión.</p>
+      <input id="campo-pin" type="password" inputmode="numeric" placeholder="PIN" autocomplete="off" />
+      <p id="mensaje-pin-error" class="mensaje-error" hidden>PIN incorrecto</p>
+      <div class="fila-botones">
+        <button id="boton-pin-confirmar" type="button" class="boton boton-primario">Salir</button>
+        <button id="boton-pin-cancelar" type="button" class="boton boton-secundario">Volver al examen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <video id="video-camara" hidden playsinline muted></video>
+  <canvas id="lienzo-camara" hidden></canvas>
+
+  <!-- ONNX Runtime Web por CDN, como script clásico (variable global `ort`):
+       esta PWA no tiene paso de build, ver src/deteccion/proctorDetector.js.
+       Los .wasm se bajan del mismo CDN. Si se sirve sin internet
+       (offline-first real), hay que vendorizar dist/ en vez de depender del
+       CDN -- pendiente, ver README. -->
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
+  <script>ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/";</script>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

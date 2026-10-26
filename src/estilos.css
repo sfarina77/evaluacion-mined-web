@@ -1,0 +1,169 @@
+/* Mismo esquema visual que los clientes Windows y Android (ver
+   captura-1-login.png del paquete Windows v1.0.6.0): fondo azul marino
+   oscuro, acento azul. */
+:root {
+  --fondo-examen: #0f172a;
+  --superficie-campo: #16213a;
+  --borde-campo: #3b5bdb;
+  --texto-principal: #ffffff;
+  --texto-secundario: #a6b0c3;
+  --acento-primario: #3b6df0;
+  --boton-secundario: #3a4459;
+  --alerta-aviso: #f5a524;
+  --alerta-grave: #e5484d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--fondo-examen);
+  color: var(--texto-principal);
+  font-family:
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+.pantalla {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 5vh 8vw;
+}
+
+#vista-examen {
+  display: block;
+  padding: 0;
+}
+
+.tarjeta-login {
+  max-width: 460px;
+  width: 100%;
+}
+
+.tarjeta-login h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.subtitulo {
+  color: var(--texto-secundario);
+  margin: 0 0 20px;
+}
+
+input[type="text"],
+input[type="password"] {
+  display: block;
+  width: 100%;
+  height: 52px;
+  margin-bottom: 14px;
+  padding: 0 14px;
+  background: var(--superficie-campo);
+  border: 1px solid var(--borde-campo);
+  border-radius: 8px;
+  color: var(--texto-principal);
+  font-size: 1rem;
+}
+
+input::placeholder {
+  color: var(--texto-secundario);
+}
+
+.mensaje-error {
+  color: var(--alerta-grave);
+  font-size: 0.85rem;
+  margin: -4px 0 12px;
+}
+
+.fila-botones {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.boton {
+  flex: 1;
+  height: 44px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  color: var(--texto-principal);
+  cursor: pointer;
+}
+
+.boton-primario {
+  background: var(--acento-primario);
+}
+
+.boton-secundario {
+  background: var(--boton-secundario);
+}
+
+/* --------------------------------------------------------------- examen */
+
+#marco-examen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.banner-aviso {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--alerta-aviso);
+  color: var(--fondo-examen);
+  font-weight: 700;
+  padding: 12px;
+  text-align: center;
+}
+
+.overlay-bloqueo {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+.gatillo-salida {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  opacity: 0.02;
+  border: none;
+  background: transparent;
+}
+
+/* --------------------------------------------------------------- diálogo */
+
+dialog {
+  background: var(--fondo-examen);
+  color: var(--texto-principal);
+  border: 1px solid var(--borde-campo);
+  border-radius: 10px;
+  padding: 24px;
+  max-width: 340px;
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
