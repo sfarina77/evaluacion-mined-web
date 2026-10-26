@@ -149,6 +149,35 @@ input::placeholder {
   font-size: 1.3rem;
 }
 
+.overlay-evasion {
+  background: var(--fondo-examen); /* opaco: no se ve el examen detrás */
+}
+
+.tarjeta-evasion {
+  max-width: 420px;
+  width: 100%;
+  padding: 0 16px;
+  font-size: 1rem;
+}
+
+.tarjeta-evasion h2 {
+  color: var(--alerta-grave);
+  margin: 0 0 12px;
+}
+
+.tarjeta-evasion h2.titulo-neutro {
+  color: var(--texto-principal);
+}
+
+.tarjeta-evasion p {
+  color: var(--texto-secundario);
+  margin: 0 0 14px;
+}
+
+.tarjeta-evasion .boton {
+  width: 100%;
+}
+
 .gatillo-salida {
   position: absolute;
   top: 4px;

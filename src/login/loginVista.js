@@ -9,6 +9,7 @@ const EXAMENES_LOCALES = {
     // Página propia de la PWA: mined.gob.sv no se deja mostrar en un iframe.
     url: new URL("../../public/examen-prueba.html", import.meta.url).href,
     pin_salida: "0000",
+    clave_reingreso: "1111",
     nombre: "Examen de prueba",
     permitir_calculadora: true,
   },

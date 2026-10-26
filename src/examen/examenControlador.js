@@ -31,17 +31,36 @@ export function iniciarExamen({ examenId, nie, info }) {
   const mensajePinError = document.getElementById("mensaje-pin-error");
   const botonPinConfirmar = document.getElementById("boton-pin-confirmar");
   const botonPinCancelar = document.getElementById("boton-pin-cancelar");
+  const overlayInicio = document.getElementById("overlay-inicio");
+  const botonComenzar = document.getElementById("boton-comenzar");
+  const overlayEvasion = document.getElementById("overlay-evasion");
+  const campoReingreso = document.getElementById("campo-reingreso");
+  const mensajeReingresoError = document.getElementById("mensaje-reingreso-error");
+  const botonReingreso = document.getElementById("boton-reingreso");
 
   const motor = new MotorAlertas(); // límites del spec: aviso en la 7, anulación en la 10
   const gestor = new GestorAlertas();
   const estadoAlimentador = crearEstadoAlimentador();
   const t0Seg = ahoraSeg();
   const pinSalida = info.pin_salida ?? "0000";
+  // Misma clave que usa el cliente Windows; si el examen no la define, el
+  // docente usa el PIN de salida.
+  const claveReingreso = info.clave_reingreso ?? pinSalida;
 
   // Evita que el propio cierre (PIN correcto, anulación) se cuente a sí mismo
   // como evasión -- mismo guard que `saliendoControladamente` en Android.
   let saliendoControladamente = false;
   let detector = null;
+  // Un mismo cambio de pestaña dispara visibilitychange + fullscreenchange
+  // (+ pérdida de foco): mientras siga la pantalla de reingreso, es una sola
+  // salida y una sola alerta.
+  let bloqueadoPorEvasion = false;
+  // Pantalla completa y foco solo se vigilan con la supervisión ya corriendo
+  // y la pantalla completa ya activada una vez (ver `vigilando`): antes, el
+  // aviso de permiso de cámara le quita el foco a la página y la pantalla
+  // completa puede no haberse concedido todavía.
+  let supervisionLista = false;
+  const vigilando = () => supervisionLista && overlayInicio.hidden;
 
   function ahoraSeg() {
     return Date.now() / 1000;
@@ -56,10 +75,19 @@ export function iniciarExamen({ examenId, nie, info }) {
   vista.hidden = false;
   marco.src = info.url;
 
+  // El navegador rechaza la pantalla completa si el clic del login ya no es
+  // "reciente" (la lista de exámenes se baja en medio): en ese caso el
+  // estudiante la activa con el botón de overlay-inicio, sin penalización.
   document.documentElement.requestFullscreen?.().catch(() => {
-    // El navegador puede rechazar el pedido si no vino de una interacción
-    // directa del usuario reciente -- no es un error fatal, la supervisión
-    // sigue igual; solo no habrá pantalla completa forzada.
+    overlayInicio.hidden = false;
+  });
+  botonComenzar.addEventListener("click", () => {
+    document.documentElement
+      .requestFullscreen?.()
+      .then(() => {
+        overlayInicio.hidden = true;
+      })
+      .catch(() => {});
   });
 
   configurarGatilloSalida();
@@ -70,6 +98,8 @@ export function iniciarExamen({ examenId, nie, info }) {
     .then(async (d) => {
       detector = d;
       await detector.iniciar();
+      supervisionLista = true;
+      if (!document.fullscreenElement) overlayInicio.hidden = false;
     })
     .catch((error) => {
       // La supervisión es obligatoria para rendir el examen (mismo criterio
@@ -139,17 +169,64 @@ export function iniciarExamen({ examenId, nie, info }) {
       if (document.hidden) reportarEvasion("cambio de pestaña o minimizado");
     });
     document.addEventListener("fullscreenchange", () => {
-      if (!document.fullscreenElement && !saliendoControladamente) {
-        reportarEvasion("salida de pantalla completa");
-      }
+      if (document.fullscreenElement || saliendoControladamente) return;
+      if (vigilando()) reportarEvasion("salida de pantalla completa");
+      else if (!bloqueadoPorEvasion) overlayInicio.hidden = false;
     });
+    // Respaldo por sondeo de lo mismo, más otra ventana encima o al lado
+    // (p. ej. un chat de IA), que no oculta la pestaña y visibilitychange no
+    // ve. Ojo con hasFocus(): da false también cuando el foco está DENTRO del
+    // iframe del examen (es de otro origen) -- por eso se excluye ese caso.
+    setInterval(() => {
+      if (!vigilando() || document.hidden || dialogoPin.open) return;
+      if (!document.fullscreenElement) {
+        reportarEvasion("fuera de pantalla completa");
+      } else if (!document.hasFocus() && document.activeElement !== marco) {
+        reportarEvasion("otra ventana con el foco");
+      }
+    }, 1000);
   }
 
-  function reportarEvasion(_motivo) {
-    if (saliendoControladamente) return;
+  function reportarEvasion(motivo) {
+    if (saliendoControladamente || bloqueadoPorEvasion) return;
+    console.warn("[evasión]", motivo, { t: Math.round(t()), vigilando: vigilando() });
     const acciones = motor.evasionKiosco(t());
     if (acciones.length) aplicarAcciones(acciones);
+    if (motor.estado !== EstadoExamen.ANULADO && !saliendoControladamente) {
+      bloquearPorEvasion();
+    }
   }
+
+  function bloquearPorEvasion() {
+    bloqueadoPorEvasion = true;
+    campoReingreso.value = "";
+    mensajeReingresoError.hidden = true;
+    overlayEvasion.hidden = false;
+  }
+
+  botonReingreso.addEventListener("click", () => {
+    if (campoReingreso.value.trim() !== claveReingreso) {
+      mensajeReingresoError.textContent = "Clave incorrecta";
+      mensajeReingresoError.hidden = false;
+      return;
+    }
+    // El clic del docente es el gesto de usuario que el navegador exige para
+    // volver a pantalla completa. Se desbloquea recién cuando se concede: si
+    // no, el sondeo lo volvería a bloquear al instante.
+    document.documentElement
+      .requestFullscreen?.()
+      .then(() => {
+        overlayEvasion.hidden = true;
+        bloqueadoPorEvasion = false;
+      })
+      .catch(() => {
+        mensajeReingresoError.textContent = "No se pudo volver a pantalla completa, intenta de nuevo";
+        mensajeReingresoError.hidden = false;
+      });
+  });
+  campoReingreso.addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") botonReingreso.click();
+  });
 
   /** No se puede impedir que cierren la pestaña (ninguna API web lo permite),
    * pero sí avisar -- y si vuelven a entrar, el estado ANULADO ya va a estar

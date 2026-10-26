@@ -32,6 +32,32 @@
       <p>Regresa frente a la cámara para continuar.</p>
     </div>
 
+    <!-- Si el navegador no aceptó la pantalla completa al iniciar (exige un
+         clic reciente y entre el clic de login y este punto se cargan los
+         modelos), el estudiante la activa con este botón, sin penalización. -->
+    <div id="overlay-inicio" class="overlay-bloqueo overlay-evasion" hidden>
+      <div class="tarjeta-evasion">
+        <h2 class="titulo-neutro">El examen se rinde en pantalla completa</h2>
+        <p>Si sales de la pantalla completa, cambias de pestaña o de ventana, el examen se bloquea y solo tu docente lo puede reactivar.</p>
+        <button id="boton-comenzar" type="button" class="boton boton-primario">Comenzar examen</button>
+      </div>
+    </div>
+
+    <!-- Bloqueo por salir del examen (cambio de pestaña/ventana, salida de
+         pantalla completa). Opaco a propósito, y solo el docente lo quita con
+         la clave de reingreso: el navegador no deja impedir la salida, pero
+         sí que el estudiante vuelva sin que el docente se entere. -->
+    <div id="overlay-evasion" class="overlay-bloqueo overlay-evasion" hidden>
+      <div class="tarjeta-evasion">
+        <h2>Saliste del examen</h2>
+        <p>Cambiar de pestaña, de ventana o salir de pantalla completa queda registrado como alerta grave.</p>
+        <p>Para continuar, llama a tu docente para que escriba la clave de reingreso.</p>
+        <input id="campo-reingreso" type="password" placeholder="Clave de reingreso" autocomplete="off" />
+        <p id="mensaje-reingreso-error" class="mensaje-error" hidden>Clave incorrecta</p>
+        <button id="boton-reingreso" type="button" class="boton boton-primario">Continuar examen</button>
+      </div>
+    </div>
+
     <!-- Punto de salida controlada: mantener presionado para pedir el PIN.
          No es un botón de "salir del examen" visible, es el disparador del
          diálogo de PIN (mismo criterio que el gatillo de la app Android). -->
