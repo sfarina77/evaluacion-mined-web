@@ -17,6 +17,13 @@
   box-sizing: border-box;
 }
 
+/* Las clases de abajo fijan `display` (flex/block), y eso le gana al
+   `display: none` que el navegador le da a [hidden]: el overlay de bloqueo
+   quedaba visible siempre aunque el JS lo ocultara. */
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   margin: 0;
@@ -151,6 +158,24 @@ input::placeholder {
   opacity: 0.02;
   border: none;
   background: transparent;
+}
+
+.vista-previa-camara {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  width: 160px;
+  height: 120px;
+  object-fit: cover;
+  transform: scaleX(-1); /* espejo, como se espera ver uno mismo */
+  border: 2px solid var(--borde-campo);
+  border-radius: 8px;
+  background: #000;
+  z-index: 10;
+}
+
+.vista-previa-camara:not(.activa) {
+  display: none;
 }
 
 /* --------------------------------------------------------------- diálogo */

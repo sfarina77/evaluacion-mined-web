@@ -59,6 +59,7 @@ export async function crearDetector({ onFrame, analisisPorSegundo = 2 }) {
       audio: false,
     });
     video.srcObject = stream;
+    video.classList.add("activa");
     await video.play();
 
     const periodoMs = 1000 / analisisPorSegundo;
@@ -68,15 +69,28 @@ export async function crearDetector({ onFrame, analisisPorSegundo = 2 }) {
   function detener() {
     if (intervalo) clearInterval(intervalo);
     stream?.getTracks().forEach((track) => track.stop());
+    video.classList.remove("activa");
     modeloDeteccion.release();
     modeloPose.release();
   }
 
   async function analizarUnFrame() {
     if (analizando) return;
+    // Chrome puede pausar un video silenciado que considera fuera de vista;
+    // un cuadro congelado (a menudo el primero, negro) daría "ausente" para
+    // siempre. Sin cuadro decodificado todavía, se salta el tick.
+    if (video.paused) video.play().catch(() => {});
+    if (video.readyState < 2 || !video.videoWidth) return;
     analizando = true;
     try {
-      contexto.drawImage(video, 0, 0, IMG_SZ, IMG_SZ);
+      // Letterbox como en ultralytics: escala sin deformar y relleno gris
+      // 114, en vez de estirar el 16:9 de la webcam a un cuadrado.
+      const escala = Math.min(IMG_SZ / video.videoWidth, IMG_SZ / video.videoHeight);
+      const ancho = Math.round(video.videoWidth * escala);
+      const alto = Math.round(video.videoHeight * escala);
+      contexto.fillStyle = "rgb(114, 114, 114)";
+      contexto.fillRect(0, 0, IMG_SZ, IMG_SZ);
+      contexto.drawImage(video, (IMG_SZ - ancho) / 2, (IMG_SZ - alto) / 2, ancho, alto);
       const pixeles = contexto.getImageData(0, 0, IMG_SZ, IMG_SZ).data;
       const tipos = await analizarFrame(pixeles, modeloDeteccion, modeloPose);
       onFrame(tipos);

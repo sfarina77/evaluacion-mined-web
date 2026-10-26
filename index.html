@@ -51,7 +51,9 @@
     </form>
   </dialog>
 
-  <video id="video-camara" hidden playsinline muted></video>
+  <!-- Vista previa visible a propósito: con `hidden`, Chrome puede pausar el
+       video y la supervisión analizaría un cuadro congelado. -->
+  <video id="video-camara" class="vista-previa-camara" playsinline muted></video>
   <canvas id="lienzo-camara" hidden></canvas>
 
   <!-- ONNX Runtime Web por CDN, como script clásico (variable global `ort`):
