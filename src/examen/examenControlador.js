@@ -37,6 +37,11 @@ export function iniciarExamen({ examenId, nie, info }) {
   const campoReingreso = document.getElementById("campo-reingreso");
   const mensajeReingresoError = document.getElementById("mensaje-reingreso-error");
   const botonReingreso = document.getElementById("boton-reingreso");
+  const overlayAdvertencia = document.getElementById("overlay-advertencia");
+  const tituloAdvertencia = document.getElementById("titulo-advertencia");
+  const textoAdvertenciasRestantes = document.getElementById("texto-advertencias-restantes");
+  const mensajeAdvertenciaError = document.getElementById("mensaje-advertencia-error");
+  const botonVolverExamen = document.getElementById("boton-volver-examen");
 
   const motor = new MotorAlertas(); // límites del spec: aviso en la 7, anulación en la 10
   const gestor = new GestorAlertas();
@@ -46,14 +51,19 @@ export function iniciarExamen({ examenId, nie, info }) {
   // Misma clave que usa el cliente Windows; si el examen no la define, el
   // docente usa el PIN de salida.
   const claveReingreso = info.clave_reingreso ?? pinSalida;
+  // Salidas que solo advierten (el estudiante vuelve solo) antes de que la
+  // siguiente bloquee con clave del docente. Cada salida igual suma su alerta
+  // grave en el motor, advertencia o no.
+  const maxAdvertencias = Number.isInteger(info.advertencias_evasion) ? info.advertencias_evasion : 5;
+  let salidas = 0;
 
   // Evita que el propio cierre (PIN correcto, anulación) se cuente a sí mismo
   // como evasión -- mismo guard que `saliendoControladamente` en Android.
   let saliendoControladamente = false;
   let detector = null;
   // Un mismo cambio de pestaña dispara visibilitychange + fullscreenchange
-  // (+ pérdida de foco): mientras siga la pantalla de reingreso, es una sola
-  // salida y una sola alerta.
+  // (+ pérdida de foco): mientras siga tapado el examen (advertencia o
+  // reingreso), es una sola salida y una sola alerta.
   let bloqueadoPorEvasion = false;
   // Pantalla completa y foco solo se vigilan con la supervisión ya corriendo
   // y la pantalla completa ya activada una vez (ver `vigilando`): antes, el
@@ -192,13 +202,41 @@ export function iniciarExamen({ examenId, nie, info }) {
     console.warn("[evasión]", motivo, { t: Math.round(t()), vigilando: vigilando() });
     const acciones = motor.evasionKiosco(t());
     if (acciones.length) aplicarAcciones(acciones);
-    if (motor.estado !== EstadoExamen.ANULADO && !saliendoControladamente) {
-      bloquearPorEvasion();
-    }
+    if (motor.estado === EstadoExamen.ANULADO || saliendoControladamente) return;
+    salidas += 1;
+    if (salidas <= maxAdvertencias) mostrarAdvertencia();
+    else bloquearPorEvasion();
   }
+
+  function mostrarAdvertencia() {
+    bloqueadoPorEvasion = true;
+    tituloAdvertencia.textContent = `Advertencia ${salidas} de ${maxAdvertencias}`;
+    const restantes = maxAdvertencias - salidas;
+    textoAdvertenciasRestantes.textContent =
+      restantes === 0
+        ? "Es tu última advertencia: si vuelves a salir, el examen se bloquea y solo tu docente lo puede reactivar."
+        : `Te ${restantes === 1 ? "queda 1 advertencia" : `quedan ${restantes} advertencias`}. Después, el examen se bloquea y solo tu docente lo puede reactivar.`;
+    mensajeAdvertenciaError.hidden = true;
+    overlayAdvertencia.hidden = false;
+  }
+
+  botonVolverExamen.addEventListener("click", () => {
+    // Mismo criterio que el reingreso: se destapa recién con la pantalla
+    // completa concedida, si no el sondeo lo contaría como otra salida.
+    document.documentElement
+      .requestFullscreen?.()
+      .then(() => {
+        overlayAdvertencia.hidden = true;
+        bloqueadoPorEvasion = false;
+      })
+      .catch(() => {
+        mensajeAdvertenciaError.hidden = false;
+      });
+  });
 
   function bloquearPorEvasion() {
     bloqueadoPorEvasion = true;
+    overlayAdvertencia.hidden = true;
     campoReingreso.value = "";
     mensajeReingresoError.hidden = true;
     overlayEvasion.hidden = false;

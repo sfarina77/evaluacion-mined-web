@@ -38,8 +38,21 @@
     <div id="overlay-inicio" class="overlay-bloqueo overlay-evasion" hidden>
       <div class="tarjeta-evasion">
         <h2 class="titulo-neutro">El examen se rinde en pantalla completa</h2>
-        <p>Si sales de la pantalla completa, cambias de pestaña o de ventana, el examen se bloquea y solo tu docente lo puede reactivar.</p>
+        <p>No salgas de la pantalla completa ni cambies de pestaña o de ventana: cada salida queda registrada, y después de las advertencias el examen se bloquea y solo tu docente lo puede reactivar.</p>
         <button id="boton-comenzar" type="button" class="boton boton-primario">Comenzar examen</button>
+      </div>
+    </div>
+
+    <!-- Advertencia por salir del examen: las primeras N salidas
+         (advertencias_evasion en examenes.json, 5 por omisión) el estudiante
+         vuelve solo; la siguiente ya es el bloqueo con clave del docente. -->
+    <div id="overlay-advertencia" class="overlay-bloqueo overlay-evasion" hidden>
+      <div class="tarjeta-evasion">
+        <h2 id="titulo-advertencia" class="titulo-aviso"></h2>
+        <p>Saliste del examen: cambiaste de pestaña, de ventana o saliste de pantalla completa. Quedó registrado.</p>
+        <p id="texto-advertencias-restantes"></p>
+        <p id="mensaje-advertencia-error" class="mensaje-error" hidden>No se pudo volver a pantalla completa, intenta de nuevo</p>
+        <button id="boton-volver-examen" type="button" class="boton boton-primario">Volver al examen</button>
       </div>
     </div>
 

@@ -165,6 +165,10 @@ input::placeholder {
   margin: 0 0 12px;
 }
 
+.tarjeta-evasion h2.titulo-aviso {
+  color: var(--alerta-aviso);
+}
+
 .tarjeta-evasion h2.titulo-neutro {
   color: var(--texto-principal);
 }
