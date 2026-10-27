@@ -1,0 +1,88 @@
+rules_version = '2';
+
+// Quién ve qué en las sesiones en vivo (src/sesion/reporteEnVivo.js escribe,
+// docente/panel.js lee):
+// - Estudiante (sesión anónima de Firebase): crea SU sesión y le agrega
+//   eventos; no puede leer nada, ni lo suyo.
+// - Docente (Google, @edu.gob.sv verificado): lee solo las sesiones de los
+//   exámenes donde su correo está en examenes/{codigo}.docentes.
+// - Admin (correo con documento en admins/): ve todo y asigna docentes. Los
+//   admins se dan de alta a mano desde la consola, nunca desde el cliente.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function autenticado() {
+      return request.auth != null;
+    }
+    function correoVerificado() {
+      return autenticado()
+        && request.auth.token.get('email', null) is string
+        && request.auth.token.get('email_verified', false) == true;
+    }
+    function correo() {
+      return request.auth.token.email;
+    }
+    function esAdmin() {
+      return correoVerificado()
+        && exists(/databases/$(database)/documents/admins/$(correo()));
+    }
+    function esDocente() {
+      return correoVerificado() && correo().matches('.*@edu[.]gob[.]sv$');
+    }
+    function docenteDe(examenId) {
+      return esAdmin()
+        || (esDocente()
+            && correo() in get(/databases/$(database)/documents/examenes/$(examenId)).data.docentes);
+    }
+
+    match /admins/{email} {
+      allow get: if correoVerificado() && correo() == email;
+    }
+
+    match /examenes/{codigo} {
+      allow read: if esAdmin() || (esDocente() && correo() in resource.data.docentes);
+      allow create, update: if esAdmin()
+        && request.resource.data.keys().hasOnly(['nombre', 'docentes'])
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() <= 120
+        && request.resource.data.docentes is list
+        && request.resource.data.docentes.size() <= 50;
+      allow delete: if esAdmin();
+    }
+
+    match /sesiones/{sesionId} {
+      allow create: if autenticado()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+             'uid', 'examenId', 'nie', 'cliente', 'inicio', 'ultimoLatido', 'expira',
+             'estado', 'contador', 'maxAlertas', 'advertencias', 'maxAdvertencias'])
+        && request.resource.data.examenId is string
+        && request.resource.data.examenId.size() <= 40
+        && request.resource.data.nie is string
+        && request.resource.data.nie.size() <= 20
+        && request.resource.data.inicio == request.time;
+      // El estudiante actualiza su estado; quién es y de qué examen, no.
+      allow update: if autenticado()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['ultimoLatido', 'estado', 'contador', 'advertencias', 'fin']);
+      allow read: if docenteDe(resource.data.examenId);
+
+      match /eventos/{eventoId} {
+        allow create: if autenticado()
+          && get(/databases/$(database)/documents/sesiones/$(sesionId)).data.uid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['tipo', 'detalle', 'cuenta', 't', 'foto', 'ts', 'expira'])
+          && request.resource.data.tipo is string
+          && request.resource.data.tipo.size() <= 40
+          && request.resource.data.detalle is string
+          && request.resource.data.detalle.size() <= 300
+          && request.resource.data.ts == request.time
+          && (request.resource.data.foto == null
+              || (request.resource.data.foto is string
+                  && request.resource.data.foto.size() < 150000
+                  && request.resource.data.foto.matches('^data:image/jpeg;base64,.*')));
+        allow read: if docenteDe(get(/databases/$(database)/documents/sesiones/$(sesionId)).data.examenId);
+      }
+    }
+  }
+}

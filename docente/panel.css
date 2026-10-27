@@ -1,0 +1,483 @@
+/* Mismo esquema que el cliente del estudiante (src/estilos.css). */
+:root {
+  --fondo: #0f172a;
+  --superficie: #16213a;
+  --superficie-alta: #1d2a47;
+  --borde: #2a3a5e;
+  --borde-acento: #3b5bdb;
+  --texto: #ffffff;
+  --texto-secundario: #a6b0c3;
+  --acento: #3b6df0;
+  --boton-secundario: #3a4459;
+  --ok: #30a46c;
+  --aviso: #f5a524;
+  --grave: #e5484d;
+  --neutro: #6b7a99;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+.tenue {
+  color: var(--texto-secundario);
+}
+
+.mensaje-error {
+  color: var(--grave);
+  font-size: 0.9rem;
+}
+
+/* ------------------------------------------------------------ barra */
+
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.marca {
+  font-weight: 800;
+}
+
+.marca span {
+  font-weight: 400;
+  color: var(--texto-secundario);
+}
+
+.usuario {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: var(--texto-secundario);
+  min-width: 0;
+}
+
+.usuario span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ botones */
+
+.boton {
+  height: 42px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.boton-primario {
+  background: var(--acento);
+}
+
+.boton-secundario {
+  background: var(--boton-secundario);
+}
+
+.boton-texto {
+  background: none;
+  border: none;
+  color: var(--texto-secundario);
+  cursor: pointer;
+  font: inherit;
+  padding: 6px;
+}
+
+.boton-texto:hover {
+  color: var(--texto);
+}
+
+/* ------------------------------------------------------------ entrada */
+
+.centrado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 16px;
+}
+
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 28px;
+}
+
+.tarjeta-entrada {
+  max-width: 440px;
+}
+
+.tarjeta-entrada h1 {
+  font-size: 1.4rem;
+  margin-bottom: 10px;
+}
+
+.tarjeta-entrada p {
+  color: var(--texto-secundario);
+  line-height: 1.5;
+}
+
+.tarjeta-entrada .boton {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* ------------------------------------------------------------ panel */
+
+.panel {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: calc(100vh - 57px);
+}
+
+.lateral {
+  border-right: 1px solid var(--borde);
+  padding: 20px 16px;
+}
+
+.lateral h2 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-secundario);
+  margin-bottom: 10px;
+}
+
+.lista-examenes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.lista-examenes button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--texto);
+  cursor: pointer;
+  font: inherit;
+}
+
+.lista-examenes button:hover {
+  background: var(--superficie);
+}
+
+.lista-examenes button[aria-current="true"] {
+  background: var(--superficie-alta);
+  border-color: var(--borde-acento);
+}
+
+.lista-examenes .codigo {
+  font-weight: 700;
+  display: block;
+}
+
+.lista-examenes .nombre {
+  font-size: 0.85rem;
+  color: var(--texto-secundario);
+}
+
+.admin {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--borde);
+}
+
+.admin form {
+  display: grid;
+  gap: 8px;
+}
+
+input[type="text"],
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.contenido {
+  padding: 24px;
+  min-width: 0;
+}
+
+.encabezado-examen {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.encabezado-examen p {
+  margin: 4px 0 0;
+}
+
+.claves {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+}
+
+.claves > div {
+  display: grid;
+  gap: 4px;
+}
+
+.clave {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  color: var(--texto);
+  font: inherit;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 1.1rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  min-width: 96px;
+}
+
+.resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.cifra {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 10px 16px;
+  min-width: 110px;
+}
+
+.cifra strong {
+  display: block;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.cifra span {
+  font-size: 0.8rem;
+  color: var(--texto-secundario);
+}
+
+.tabla-envoltura {
+  overflow-x: auto;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.tabla th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--texto-secundario);
+  padding: 10px 14px;
+  background: var(--superficie);
+  white-space: nowrap;
+}
+
+.tabla td {
+  padding: 10px 14px;
+  border-top: 1px solid var(--borde);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabla tbody tr {
+  cursor: pointer;
+}
+
+.tabla tbody tr:hover {
+  background: var(--superficie);
+}
+
+.vacio {
+  padding: 24px;
+  margin: 0;
+  text-align: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--color) 18%, transparent);
+  color: var(--color);
+}
+
+.chip::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color);
+}
+
+.ok { --color: var(--ok); }
+.aviso { --color: var(--aviso); }
+.grave { --color: var(--grave); }
+.neutro { --color: var(--neutro); }
+
+.texto-grave {
+  color: var(--grave);
+  font-weight: 700;
+}
+
+.texto-aviso {
+  color: var(--aviso);
+}
+
+/* ------------------------------------------------------------ línea de tiempo */
+
+dialog {
+  background: var(--fondo);
+  color: var(--texto);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 0;
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.dialogo-sesion {
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+}
+
+.dialogo-encabezado {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 18px 20px;
+  background: var(--fondo);
+  border-bottom: 1px solid var(--borde);
+}
+
+.dialogo-encabezado p {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+}
+
+.linea-tiempo {
+  list-style: none;
+  margin: 0;
+  padding: 12px 20px 20px;
+}
+
+.linea-tiempo li {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 12px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.linea-tiempo .hora {
+  color: var(--texto-secundario);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  padding-top: 3px;
+}
+
+.linea-tiempo .detalle {
+  margin: 6px 0 0;
+  color: var(--texto-secundario);
+  font-size: 0.88rem;
+}
+
+.linea-tiempo img {
+  width: 128px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--borde);
+  cursor: zoom-in;
+}
+
+.dialogo-foto img {
+  display: block;
+  width: min(640px, calc(100vw - 32px));
+  height: auto;
+}
+
+/* ------------------------------------------------------------ teléfono */
+
+@media (max-width: 760px) {
+  .panel {
+    grid-template-columns: 1fr;
+  }
+  .lateral {
+    border-right: none;
+    border-bottom: 1px solid var(--borde);
+  }
+  .contenido {
+    padding: 16px;
+  }
+  .linea-tiempo li {
+    grid-template-columns: 52px 1fr;
+  }
+  .linea-tiempo img {
+    grid-column: 2;
+  }
+}

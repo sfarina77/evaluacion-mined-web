@@ -16,11 +16,11 @@
       <input id="campo-nie" type="text" placeholder="NIE del estudiante" autocomplete="username" />
       <input id="campo-codigo" type="text" placeholder="Código del Examen (Ej: EXAM101)" />
       <!-- Consentimiento antes de encender la cámara (estudiantes menores de
-           edad). Si cambia lo que se captura -- p. ej. fotos de evidencia en
-           la fase 2 -- este texto tiene que cambiar con eso. -->
+           edad). Tiene que decir exactamente lo que se captura y quién lo ve:
+           si cambia src/sesion/reporteEnVivo.js o DIAS_RETENCION, cambia esto. -->
       <label class="consentimiento">
         <input id="campo-consentimiento" type="checkbox" />
-        <span>Entiendo que durante el examen se usará la cámara de este equipo para supervisarme. Las imágenes se analizan en el equipo y no se graban ni se envían; solo se registran las alertas (por ejemplo, salir de pantalla completa) junto con mi NIE, para mi docente.</span>
+        <span>Entiendo que durante el examen se usará la cámara de este equipo para supervisarme. No se graba video: se guarda una foto al empezar y en cada alerta (por ejemplo, otra persona frente a la cámara o salir de pantalla completa), junto con mi NIE. Solo mi docente puede verlas y se borran a los 90 días.</span>
       </label>
       <p id="mensaje-error" class="mensaje-error" hidden></p>
       <div class="fila-botones">

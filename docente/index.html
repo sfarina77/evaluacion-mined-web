@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es-SV">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Panel docente</title>
+<link rel="stylesheet" href="panel.css" />
+</head>
+<body>
+
+  <header class="barra">
+    <div class="marca">Evaluación MINED <span>· Panel docente</span></div>
+    <div id="usuario" class="usuario" hidden>
+      <span id="correo-usuario"></span>
+      <button id="boton-salir" type="button" class="boton-texto">Salir</button>
+    </div>
+  </header>
+
+  <!-- Entrada -->
+  <main id="vista-entrada" class="centrado" hidden>
+    <div class="tarjeta tarjeta-entrada">
+      <h1>Supervisión de exámenes</h1>
+      <p>Entra con tu cuenta institucional <strong>@edu.gob.sv</strong> para ver en vivo a tus estudiantes y las alertas de cada uno.</p>
+      <button id="boton-google" type="button" class="boton boton-primario">Entrar con Google</button>
+      <p id="mensaje-entrada" class="mensaje-error" hidden></p>
+    </div>
+  </main>
+
+  <main id="vista-sin-config" class="centrado" hidden>
+    <div class="tarjeta tarjeta-entrada">
+      <h1>Panel no disponible</h1>
+      <p>El panel todavía no está conectado a su base de datos.</p>
+    </div>
+  </main>
+
+  <!-- Panel -->
+  <main id="vista-panel" class="panel" hidden>
+    <aside class="lateral">
+      <h2>Mis exámenes</h2>
+      <ul id="lista-examenes" class="lista-examenes"></ul>
+      <p id="sin-examenes" class="tenue" hidden>Todavía no tienes exámenes asignados. Pide al administrador que te agregue con tu correo.</p>
+
+      <section id="seccion-admin" class="admin" hidden>
+        <h2>Asignar docentes</h2>
+        <form id="form-admin">
+          <input id="admin-codigo" type="text" placeholder="Código del examen (Ej: EXAM202)" required />
+          <input id="admin-nombre" type="text" placeholder="Nombre del examen" />
+          <textarea id="admin-docentes" rows="3" placeholder="Correos de los docentes, uno por línea"></textarea>
+          <button type="submit" class="boton boton-secundario">Guardar</button>
+          <p id="mensaje-admin" class="tenue" hidden></p>
+        </form>
+      </section>
+    </aside>
+
+    <section class="contenido">
+      <div id="sin-seleccion" class="centrado tenue">Elige un examen para ver a tus estudiantes.</div>
+
+      <div id="detalle-examen" hidden>
+        <div class="encabezado-examen">
+          <div>
+            <h1 id="titulo-examen"></h1>
+            <p id="subtitulo-examen" class="tenue"></p>
+          </div>
+          <div class="claves">
+            <div>
+              <span class="tenue">Clave de reingreso</span>
+              <button id="boton-clave" type="button" class="clave" title="Mostrar u ocultar">••••</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="resumen" class="resumen"></div>
+
+        <div class="tabla-envoltura">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>NIE</th>
+                <th>Estado</th>
+                <th>Alertas</th>
+                <th>Advertencias</th>
+                <th>Inicio</th>
+                <th>Último contacto</th>
+              </tr>
+            </thead>
+            <tbody id="filas-sesiones"></tbody>
+          </table>
+          <p id="sin-sesiones" class="tenue vacio" hidden>Nadie ha empezado este examen todavía. Aparecerán aquí en cuanto entren.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Línea de tiempo de un estudiante -->
+  <dialog id="dialogo-sesion" class="dialogo-sesion">
+    <div class="dialogo-encabezado">
+      <div>
+        <h2 id="titulo-sesion"></h2>
+        <p id="subtitulo-sesion" class="tenue"></p>
+      </div>
+      <button id="boton-cerrar-sesion" type="button" class="boton-texto">Cerrar</button>
+    </div>
+    <ol id="linea-tiempo" class="linea-tiempo"></ol>
+  </dialog>
+
+  <dialog id="dialogo-foto" class="dialogo-foto">
+    <img id="foto-grande" alt="Foto de evidencia" />
+  </dialog>
+
+  <script type="module" src="panel.js"></script>
+</body>
+</html>

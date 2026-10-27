@@ -4,6 +4,7 @@ import { alimentar, crearEstadoAlimentador } from "../motor/alimentarMotor.js";
 import { crearDetector } from "../deteccion/proctorDetector.js";
 import { guardarYEncolar } from "../sesion/colaSubida.js";
 import { pantallaExtendida } from "./entorno.js";
+import { crearReporteEnVivo } from "../sesion/reporteEnVivo.js";
 
 /**
  * Controlador de la pantalla de examen: iframe + bloqueo a nivel de
@@ -49,6 +50,7 @@ export function iniciarExamen({ examenId, nie, info }) {
   const motor = new MotorAlertas(); // límites del spec: aviso en la 7, anulación en la 10
   const gestor = new GestorAlertas();
   const estadoAlimentador = crearEstadoAlimentador();
+  const reporte = crearReporteEnVivo({ examenId, nie });
   const t0Seg = ahoraSeg();
   const pinSalida = info.pin_salida ?? "0000";
   // Misma clave que usa el cliente Windows; si el examen no la define, el
@@ -114,6 +116,13 @@ export function iniciarExamen({ examenId, nie, info }) {
       detector = d;
       await detector.iniciar();
       supervisionLista = true;
+      reporte.iniciar({
+        estado: "activo",
+        contador: 0,
+        maxAlertas: motor.maxAlertas,
+        advertencias: 0,
+        maxAdvertencias,
+      });
       if (!document.fullscreenElement) overlayInicio.hidden = false;
     })
     .catch((error) => {
@@ -146,16 +155,26 @@ export function iniciarExamen({ examenId, nie, info }) {
   function aplicarAcciones(acciones) {
     for (const accion of acciones) {
       switch (accion) {
-        case Accion.ALERTA:
-          break; // sin efecto visible; el registro ya quedó en el motor
+        case Accion.ALERTA: {
+          // Sin efecto visible para el estudiante; el docente la ve con foto.
+          const alerta = motor.alertas.at(-1);
+          reporte.evento("alerta", { detalle: alerta.situacion, cuenta: true, t: alerta.t, conFoto: true });
+          reporte.estado({ contador: motor.contador });
+          break;
+        }
         case Accion.AVISO_ESTUDIANTE:
           mostrarAviso();
+          reporte.evento("aviso", { detalle: `Se le avisó que lleva ${motor.contador} alertas`, t: t() });
           break;
         case Accion.BLOQUEAR_EXAMEN:
           overlayBloqueo.hidden = false;
+          reporte.evento("bloqueo_ausencia", { detalle: "Bloqueado por ausencia prolongada", t: t() });
+          reporte.estado({ estado: "bloqueado_ausencia" });
           break;
         case Accion.REACTIVAR_EXAMEN:
           overlayBloqueo.hidden = true;
+          reporte.evento("reactivado", { detalle: "Volvió frente a la cámara", t: t() });
+          reporte.estado({ estado: "activo" });
           break;
         case Accion.ANULAR_EXAMEN:
           mostrarAnulacionYTerminar();
@@ -215,12 +234,20 @@ export function iniciarExamen({ examenId, nie, info }) {
     salidas += 1;
     if (salidas <= maxAdvertencias) {
       advertencias.push({ t: t(), motivo });
+      reporte.evento("advertencia", {
+        detalle: `${motivo} (advertencia ${salidas} de ${maxAdvertencias})`,
+        t: t(),
+        conFoto: true,
+      });
+      reporte.estado({ estado: "advertencia", advertencias: salidas });
       mostrarAdvertencia();
       return;
     }
     const acciones = motor.evasionKiosco(t());
     if (acciones.length) aplicarAcciones(acciones);
     if (motor.estado === EstadoExamen.ANULADO || saliendoControladamente) return;
+    reporte.evento("bloqueo_evasion", { detalle: `${motivo}: espera la clave del docente`, t: t() });
+    reporte.estado({ estado: "bloqueado_evasion" });
     bloquearPorEvasion();
   }
 
@@ -254,6 +281,7 @@ export function iniciarExamen({ examenId, nie, info }) {
       .then(() => {
         overlayAdvertencia.hidden = true;
         bloqueadoPorEvasion = false;
+        reporte.estado({ estado: "activo" });
       })
       .catch(() => {
         mensajeAdvertenciaError.textContent = "No se pudo volver a pantalla completa, intenta de nuevo";
@@ -284,6 +312,8 @@ export function iniciarExamen({ examenId, nie, info }) {
       .then(() => {
         overlayEvasion.hidden = true;
         bloqueadoPorEvasion = false;
+        reporte.evento("reingreso", { detalle: "El docente ingresó la clave de reingreso", t: t() });
+        reporte.estado({ estado: "activo" });
       })
       .catch(() => {
         mensajeReingresoError.textContent = "No se pudo volver a pantalla completa, intenta de nuevo";
@@ -359,16 +389,19 @@ export function iniciarExamen({ examenId, nie, info }) {
     // Recargar al terminar (no solo volver a mostrar el login): cada
     // iniciarExamen registra sus propios listeners de evasión y de PIN, y sin
     // recargar quedarían vivos con el PIN y el motor del examen anterior.
-    guardarYEncolar({
-      examenId,
-      nie,
-      motor,
-      gestor,
-      advertencias,
-      inicioEpochSeg: t0Seg,
-      tFin: t(),
-    })
-      .catch((error) => console.error("No se pudo guardar la sesión:", error))
-      .finally(() => window.location.reload());
+    const anulado = motor.estado === EstadoExamen.ANULADO;
+    reporte.evento("fin", { detalle: anulado ? "Examen anulado" : "Terminó el examen", t: t() });
+    Promise.allSettled([
+      reporte.cerrar({ estado: anulado ? "anulado" : "terminado", contador: motor.contador }),
+      guardarYEncolar({
+        examenId,
+        nie,
+        motor,
+        gestor,
+        advertencias,
+        inicioEpochSeg: t0Seg,
+        tFin: t(),
+      }).catch((error) => console.error("No se pudo guardar la sesión:", error)),
+    ]).finally(() => window.location.reload());
   }
 }

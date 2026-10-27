@@ -14,7 +14,7 @@ import { reintentarPendientes } from "../src/sesion/colaSubida.js";
  *    (Chrome/ChromeOS sí; no es un estándar universal).
  */
 
-const CACHE = "evaluacion-mined-shell-v2";
+const CACHE = "evaluacion-mined-shell-v3";
 const ARCHIVOS_SHELL = [
   "./",
   "./examen-prueba.html",
@@ -32,6 +32,9 @@ const ARCHIVOS_SHELL = [
   "../src/sesion/almacenSesiones.js",
   "../src/sesion/colaSubida.js",
   "../src/deteccion/proctorDetector.js",
+  "../src/sesion/reporteEnVivo.js",
+  "../src/nube/nube.js",
+  "../src/nube/configNube.js",
 ];
 
 self.addEventListener("install", (evento) => {
