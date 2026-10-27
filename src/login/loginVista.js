@@ -1,5 +1,6 @@
 import { obtener as obtenerExamenes, normalizarUrlExamen } from "./examenConfig.js";
 import { nieValido } from "../sesion/nie.js";
+import { pantallaExtendida } from "../examen/entorno.js";
 
 // Examen de prueba embebido, igual que EXAMENES_LOCALES en el cliente Windows
 // y en LoginActivity de Android: permite probar el flujo completo sin
@@ -26,6 +27,7 @@ export function inicializarLogin({ onIniciar }) {
   const vista = document.getElementById("vista-login");
   const campoNie = document.getElementById("campo-nie");
   const campoCodigo = document.getElementById("campo-codigo");
+  const campoConsentimiento = document.getElementById("campo-consentimiento");
   const mensajeError = document.getElementById("mensaje-error");
   const botonIniciar = document.getElementById("boton-iniciar");
   const botonCancelar = document.getElementById("boton-cancelar");
@@ -41,6 +43,7 @@ export function inicializarLogin({ onIniciar }) {
   botonCancelar.addEventListener("click", () => {
     campoNie.value = "";
     campoCodigo.value = "";
+    campoConsentimiento.checked = false;
     ocultarError();
   });
 
@@ -55,6 +58,16 @@ export function inicializarLogin({ onIniciar }) {
     }
     if (!codigo) {
       mostrarError("Ese código de examen no existe");
+      return;
+    }
+    if (!campoConsentimiento.checked) {
+      mostrarError("Para rendir el examen tienes que aceptar el uso de la cámara");
+      return;
+    }
+    // Antes de entrar, para que no le cuente como advertencia algo que ni
+    // sabía: con el examen ya empezado, el segundo monitor es una salida.
+    if (pantallaExtendida()) {
+      mostrarError("Desconecta el segundo monitor (o ponlo en modo espejo) para rendir el examen");
       return;
     }
 

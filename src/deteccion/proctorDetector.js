@@ -14,6 +14,8 @@
  * clásico, igual que se haría en cualquier página sin bundler.
  */
 
+import { esCamaraVirtual } from "../examen/entorno.js";
+
 const IMG_SZ = 640;
 const CONF_YOLO = 0.35;
 const FACE_KP_CONF = 0.65;
@@ -54,10 +56,7 @@ export async function crearDetector({ onFrame, analisisPorSegundo = 2 }) {
   let analizando = false;
 
   async function iniciar() {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user" },
-      audio: false,
-    });
+    stream = await abrirCamaraReal();
     video.srcObject = stream;
     video.classList.add("activa");
     await video.play();
@@ -100,6 +99,32 @@ export async function crearDetector({ onFrame, analisisPorSegundo = 2 }) {
   }
 
   return { iniciar, detener };
+}
+
+/** getUserMedia, pero sin aceptar una cámara virtual (OBS y similares
+ * transmiten un video cualquiera como si fuera la webcam). Si la cámara por
+ * omisión es virtual se prueba con otra real; si no hay ninguna, error
+ * `CamaraVirtualError`. Las etiquetas solo se pueden leer con el permiso de
+ * cámara ya concedido, por eso primero se abre y después se mira. */
+async function abrirCamaraReal() {
+  const abierto = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "user" },
+    audio: false,
+  });
+  if (!esCamaraVirtual(abierto.getVideoTracks()[0]?.label)) return abierto;
+  abierto.getTracks().forEach((track) => track.stop());
+
+  const dispositivos = await navigator.mediaDevices.enumerateDevices();
+  const real = dispositivos.find((d) => d.kind === "videoinput" && !esCamaraVirtual(d.label));
+  if (real) {
+    return navigator.mediaDevices.getUserMedia({
+      video: { deviceId: { exact: real.deviceId } },
+      audio: false,
+    });
+  }
+  const error = new Error("solo hay cámaras virtuales");
+  error.name = "CamaraVirtualError";
+  throw error;
 }
 
 async function analizarFrame(pixeles, modeloDeteccion, modeloPose) {

@@ -3,6 +3,7 @@ import { GestorAlertas } from "../motor/gestorAlertas.js";
 import { alimentar, crearEstadoAlimentador } from "../motor/alimentarMotor.js";
 import { crearDetector } from "../deteccion/proctorDetector.js";
 import { guardarYEncolar } from "../sesion/colaSubida.js";
+import { pantallaExtendida } from "./entorno.js";
 
 /**
  * Controlador de la pantalla de examen: iframe + bloqueo a nivel de
@@ -17,8 +18,10 @@ import { guardarYEncolar } from "../sesion/colaSubida.js";
  * (a diferencia de `Lock Task Mode` en Android, que si está autorizado por
  * un MDM sí deshabilita esa salida). Por eso acá la detección de evasión NO
  * es un caso degradado como en Android/Windows -- es la defensa PRINCIPAL:
- * cualquier salida de pantalla completa o cambio de pestaña se cuenta como
- * alerta grave en el mismo contador de 10. Ver docs/chromebooks_spike.md.
+ * cualquier salida de pantalla completa, cambio de pestaña o segundo monitor
+ * queda registrada; las primeras son advertencias, y cada bloqueo que exige
+ * la clave del docente es una alerta grave en el contador de 10. Ver
+ * docs/chromebooks_spike.md.
  */
 export function iniciarExamen({ examenId, nie, info }) {
   const vista = document.getElementById("vista-examen");
@@ -52,10 +55,12 @@ export function iniciarExamen({ examenId, nie, info }) {
   // docente usa el PIN de salida.
   const claveReingreso = info.clave_reingreso ?? pinSalida;
   // Salidas que solo advierten (el estudiante vuelve solo) antes de que la
-  // siguiente bloquee con clave del docente. Cada salida igual suma su alerta
-  // grave en el motor, advertencia o no.
+  // siguiente bloquee con clave del docente. Las advertencias NO suman al
+  // contador de anulación (decisión 27/10/2026): se registran en la sesión
+  // para el docente; solo cada bloqueo con clave es alerta grave del motor.
   const maxAdvertencias = Number.isInteger(info.advertencias_evasion) ? info.advertencias_evasion : 5;
   let salidas = 0;
+  const advertencias = []; // { t, motivo }, van en la sesión subida
 
   // Evita que el propio cierre (PIN correcto, anulación) se cuente a sí mismo
   // como evasión -- mismo guard que `saliendoControladamente` en Android.
@@ -119,7 +124,10 @@ export function iniciarExamen({ examenId, nie, info }) {
         sinPermiso
           ? "La supervisión necesita la cámara para rendir el examen. " +
               "Revisa el permiso de cámara del navegador e intenta de nuevo."
-          : "No se pudo iniciar la supervisión (no cargaron los modelos de detección). " +
+          : error?.name === "CamaraVirtualError"
+            ? "Solo se encontró una cámara virtual (OBS, ManyCam o similar). " +
+              "Para rendir el examen se necesita la cámara real del equipo."
+            : "No se pudo iniciar la supervisión (no cargaron los modelos de detección). " +
               "Avisa al encargado técnico.",
       );
       console.error("No se pudo iniciar la supervisión por cámara:", error);
@@ -187,9 +195,13 @@ export function iniciarExamen({ examenId, nie, info }) {
     // (p. ej. un chat de IA), que no oculta la pestaña y visibilitychange no
     // ve. Ojo con hasFocus(): da false también cuando el foco está DENTRO del
     // iframe del examen (es de otro origen) -- por eso se excluye ese caso.
+    // El segundo monitor también: la pantalla completa ocupa solo uno, y en
+    // el otro puede haber un chat de IA sin que la página pierda el foco.
     setInterval(() => {
       if (!vigilando() || document.hidden || dialogoPin.open) return;
-      if (!document.fullscreenElement) {
+      if (pantallaExtendida()) {
+        reportarEvasion("segundo monitor conectado");
+      } else if (!document.fullscreenElement) {
         reportarEvasion("fuera de pantalla completa");
       } else if (!document.hasFocus() && document.activeElement !== marco) {
         reportarEvasion("otra ventana con el foco");
@@ -200,12 +212,25 @@ export function iniciarExamen({ examenId, nie, info }) {
   function reportarEvasion(motivo) {
     if (saliendoControladamente || bloqueadoPorEvasion) return;
     console.warn("[evasión]", motivo, { t: Math.round(t()), vigilando: vigilando() });
+    salidas += 1;
+    if (salidas <= maxAdvertencias) {
+      advertencias.push({ t: t(), motivo });
+      mostrarAdvertencia();
+      return;
+    }
     const acciones = motor.evasionKiosco(t());
     if (acciones.length) aplicarAcciones(acciones);
     if (motor.estado === EstadoExamen.ANULADO || saliendoControladamente) return;
-    salidas += 1;
-    if (salidas <= maxAdvertencias) mostrarAdvertencia();
-    else bloquearPorEvasion();
+    bloquearPorEvasion();
+  }
+
+  /** Volver al examen exige el monitor extra ya desconectado: si no, el
+   * sondeo lo contaría como otra salida al segundo siguiente. */
+  function segundoMonitorPendiente(mensajeError) {
+    if (!pantallaExtendida()) return false;
+    mensajeError.textContent = "Desconecta el segundo monitor para volver al examen";
+    mensajeError.hidden = false;
+    return true;
   }
 
   function mostrarAdvertencia() {
@@ -221,6 +246,7 @@ export function iniciarExamen({ examenId, nie, info }) {
   }
 
   botonVolverExamen.addEventListener("click", () => {
+    if (segundoMonitorPendiente(mensajeAdvertenciaError)) return;
     // Mismo criterio que el reingreso: se destapa recién con la pantalla
     // completa concedida, si no el sondeo lo contaría como otra salida.
     document.documentElement
@@ -230,6 +256,7 @@ export function iniciarExamen({ examenId, nie, info }) {
         bloqueadoPorEvasion = false;
       })
       .catch(() => {
+        mensajeAdvertenciaError.textContent = "No se pudo volver a pantalla completa, intenta de nuevo";
         mensajeAdvertenciaError.hidden = false;
       });
   });
@@ -248,6 +275,7 @@ export function iniciarExamen({ examenId, nie, info }) {
       mensajeReingresoError.hidden = false;
       return;
     }
+    if (segundoMonitorPendiente(mensajeReingresoError)) return;
     // El clic del docente es el gesto de usuario que el navegador exige para
     // volver a pantalla completa. Se desbloquea recién cuando se concede: si
     // no, el sondeo lo volvería a bloquear al instante.
@@ -336,6 +364,7 @@ export function iniciarExamen({ examenId, nie, info }) {
       nie,
       motor,
       gestor,
+      advertencias,
       inicioEpochSeg: t0Seg,
       tFin: t(),
     })

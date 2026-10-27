@@ -14,7 +14,7 @@ import { reintentarPendientes } from "../src/sesion/colaSubida.js";
  *    (Chrome/ChromeOS sí; no es un estándar universal).
  */
 
-const CACHE = "evaluacion-mined-shell-v1";
+const CACHE = "evaluacion-mined-shell-v2";
 const ARCHIVOS_SHELL = [
   "./",
   "./examen-prueba.html",
@@ -24,6 +24,7 @@ const ARCHIVOS_SHELL = [
   "../src/login/loginVista.js",
   "../src/login/examenConfig.js",
   "../src/examen/examenControlador.js",
+  "../src/examen/entorno.js",
   "../src/motor/motorAlertas.js",
   "../src/motor/gestorAlertas.js",
   "../src/motor/alimentarMotor.js",

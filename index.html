@@ -15,6 +15,13 @@
       <p class="subtitulo">Identifícate y escribe el código de la prueba asignado por tu docente.</p>
       <input id="campo-nie" type="text" placeholder="NIE del estudiante" autocomplete="username" />
       <input id="campo-codigo" type="text" placeholder="Código del Examen (Ej: EXAM101)" />
+      <!-- Consentimiento antes de encender la cámara (estudiantes menores de
+           edad). Si cambia lo que se captura -- p. ej. fotos de evidencia en
+           la fase 2 -- este texto tiene que cambiar con eso. -->
+      <label class="consentimiento">
+        <input id="campo-consentimiento" type="checkbox" />
+        <span>Entiendo que durante el examen se usará la cámara de este equipo para supervisarme. Las imágenes se analizan en el equipo y no se graban ni se envían; solo se registran las alertas (por ejemplo, salir de pantalla completa) junto con mi NIE, para mi docente.</span>
+      </label>
       <p id="mensaje-error" class="mensaje-error" hidden></p>
       <div class="fila-botones">
         <button id="boton-iniciar" class="boton boton-primario">Iniciar Evaluación</button>
@@ -49,7 +56,7 @@
     <div id="overlay-advertencia" class="overlay-bloqueo overlay-evasion" hidden>
       <div class="tarjeta-evasion">
         <h2 id="titulo-advertencia" class="titulo-aviso"></h2>
-        <p>Saliste del examen: cambiaste de pestaña, de ventana o saliste de pantalla completa. Quedó registrado.</p>
+        <p>Saliste del examen: cambiaste de pestaña o de ventana, saliste de pantalla completa o conectaste otro monitor. Quedó registrado.</p>
         <p id="texto-advertencias-restantes"></p>
         <p id="mensaje-advertencia-error" class="mensaje-error" hidden>No se pudo volver a pantalla completa, intenta de nuevo</p>
         <button id="boton-volver-examen" type="button" class="boton boton-primario">Volver al examen</button>
@@ -63,7 +70,7 @@
     <div id="overlay-evasion" class="overlay-bloqueo overlay-evasion" hidden>
       <div class="tarjeta-evasion">
         <h2>Saliste del examen</h2>
-        <p>Cambiar de pestaña, de ventana o salir de pantalla completa queda registrado como alerta grave.</p>
+        <p>Cambiar de pestaña o de ventana, salir de pantalla completa o conectar otro monitor queda registrado como alerta grave.</p>
         <p>Para continuar, llama a tu docente para que escriba la clave de reingreso.</p>
         <input id="campo-reingreso" type="password" placeholder="Clave de reingreso" autocomplete="off" />
         <p id="mensaje-reingreso-error" class="mensaje-error" hidden>Clave incorrecta</p>

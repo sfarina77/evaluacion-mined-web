@@ -39,7 +39,7 @@ function leerConfig() {
   }
 }
 
-function construirTimeline({ examenId, nie, motor, gestor, inicioEpochSeg, tFin }) {
+function construirTimeline({ examenId, nie, motor, gestor, advertencias = [], inicioEpochSeg, tFin }) {
   const timeline = gestor.cerrar(tFin);
   const timelineConFechas = conFechas(timeline, inicioEpochSeg);
   const resumen = motor.resumen();
@@ -52,6 +52,7 @@ function construirTimeline({ examenId, nie, motor, gestor, inicioEpochSeg, tFin 
     detecciones_crudas: timeline.length,
     aviso_al_estudiante: resumen.contador >= motor.alertaDeAviso,
     bloqueos: motor.bloqueosEmitidos,
+    advertencias_evasion: advertencias.length,
     origen: "motor_en_vivo",
   };
   return {
@@ -61,6 +62,12 @@ function construirTimeline({ examenId, nie, motor, gestor, inicioEpochSeg, tFin 
     sesion_fin: new Date((inicioEpochSeg + tFin) * 1000).toISOString(),
     zona_horaria_datos: "UTC",
     alertas: timelineConFechas,
+    // Salidas del examen que solo advirtieron: no suman al contador del motor.
+    advertencias_evasion: advertencias.map((a) => ({
+      t: a.t,
+      ts: new Date((inicioEpochSeg + a.t) * 1000).toISOString(),
+      motivo: a.motivo,
+    })),
     total: timeline.length,
     veredicto_motor: veredicto,
   };
@@ -103,6 +110,23 @@ function construirPayload(sesionId, timeline) {
     });
   }
 
+  for (const a of timeline.advertencias_evasion ?? []) {
+    alertas.push({
+      tipo: "advertencia_evasion",
+      severidad: "normal",
+      etiqueta: "conductual",
+      cuenta: false,
+      origen: "cliente",
+      detalle: a.motivo,
+      ts_inicio: a.ts,
+      ts_fin: null,
+      t_inicio: a.t,
+      t_fin: null,
+      duracion_seg: null,
+      evidencia_uri: null,
+    });
+  }
+
   const payload = {
     sesion_id: sesionId,
     examen_id: timeline.examen_id,
@@ -136,6 +160,9 @@ function narrativaDe(veredicto) {
   if (veredicto.bloqueos > 0) {
     partes.push(`El examen se bloqueó ${veredicto.bloqueos} vez/veces por ausencia.`);
   }
+  if (veredicto.advertencias_evasion > 0) {
+    partes.push(`Salió del examen ${veredicto.advertencias_evasion} vez/veces con advertencia (no suman alerta).`);
+  }
   if (veredicto.estado === "anulado") partes.push(`Apelación automática: ${veredicto.apelacion}.`);
   return partes.join(" ");
 }
@@ -152,9 +179,9 @@ async function subir(sesionId, timeline) {
   if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`);
 }
 
-export async function guardarYEncolar({ examenId, nie, motor, gestor, inicioEpochSeg, tFin }) {
+export async function guardarYEncolar({ examenId, nie, motor, gestor, advertencias, inicioEpochSeg, tFin }) {
   const sesionId = `ses_${examenId}_${crypto.randomUUID()}`;
-  const timeline = construirTimeline({ examenId, nie, motor, gestor, inicioEpochSeg, tFin });
+  const timeline = construirTimeline({ examenId, nie, motor, gestor, advertencias, inicioEpochSeg, tFin });
   await guardarSesion({ sesionId, timeline, subida: false });
 
   try {

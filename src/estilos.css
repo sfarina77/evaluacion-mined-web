@@ -87,6 +87,25 @@ input::placeholder {
   color: var(--texto-secundario);
 }
 
+.consentimiento {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 14px;
+  color: var(--texto-secundario);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.consentimiento input {
+  margin-top: 3px;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--acento-primario);
+}
+
 .mensaje-error {
   color: var(--alerta-grave);
   font-size: 0.85rem;
