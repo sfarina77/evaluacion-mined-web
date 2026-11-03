@@ -538,8 +538,13 @@ dialog::backdrop {
   height: 28px;
 }
 
-.reproductor-grande .reproductor-texto,
+.reproductor-grande .reproductor-texto {
+  font-size: 1.4rem;
+}
+
 .reproductor-grande .reproductor-numero {
+  width: 240px;
+  height: 64px;
   font-size: 1.4rem;
 }
 
