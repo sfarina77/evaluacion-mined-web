@@ -232,6 +232,14 @@
   max-height: calc(100vh - 48px);
 }
 
+.contenido-revision {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  overflow-y: auto;
+  max-height: calc(100vh - 48px);
+}
+
 .campo-medio,
 .campo-opciones,
 .campo-rubrica {

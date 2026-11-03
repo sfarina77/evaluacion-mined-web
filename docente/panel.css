@@ -85,8 +85,22 @@ h1 {
 }
 
 .marca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 800;
   color: var(--acento);
+}
+
+/* Mascota (2026-11-03): una jirafa simple como marca de la plataforma --
+   pensada para que un niño la reconozca a simple vista y un adulto no la
+   sienta infantil de más (sin ojos gigantes ni colores saturados tipo
+   caricatura). Hereda --acento/--acento-2/--calido, así que cambia sola con
+   el tema. */
+.mascota {
+  flex: none;
+  width: 30px;
+  height: 30px;
 }
 
 .marca span {

@@ -88,11 +88,28 @@ textarea {
   box-shadow: 0 2px 10px rgba(31, 42, 68, 0.08);
 }
 
+/* Mascota (2026-11-03): mismo mark que docente/dashboard/autoria (ver
+   panel.css), acá más grande y centrada porque es la primera pantalla que
+   ve un estudiante -- pensada para que un niño la reconozca y un adulto
+   (madre, padre, docente) no la sienta infantil de más. */
+.mascota {
+  width: 30px;
+  height: 30px;
+}
+
+.mascota-grande {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 10px;
+}
+
 .tarjeta-login h1 {
   font-size: 1.6rem;
   font-weight: 800;
   color: var(--acento-primario);
   margin: 0 0 8px;
+  text-align: center;
 }
 
 .subtitulo {

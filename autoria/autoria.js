@@ -115,6 +115,7 @@ async function entrar(usuario) {
 
   configurarFormularioExamen();
   configurarItems();
+  configurarRevision();
   configurarGenerador();
   configurarBiblioteca();
 }
@@ -234,25 +235,57 @@ function configurarFormularioExamen() {
 
 // ---------------------------------------------------------------- items
 
+/** Una fila de pregunta (orden, tipo, enunciado, puntos), reutilizada por la
+ * lista normal y por el diálogo de revisión final -- mismo aspecto, distinto
+ * qué pasa al hacer clic. */
+function filaItem(item, indice, alHacerClic) {
+  const fila = el(
+    "li",
+    { clase: "fila-item" },
+    el("span", { clase: "orden-item", texto: String(indice + 1) }),
+    el(
+      "div",
+      { clase: "resumen-item" },
+      el("strong", { texto: TITULOS_TIPO[item.tipo] ?? item.tipo }),
+      el("p", { texto: item.enunciado }),
+    ),
+    el("span", { clase: "tenue", texto: `${item.puntos} pts` }),
+  );
+  fila.addEventListener("click", alHacerClic);
+  return fila;
+}
+
 function pintarItems() {
   $("sin-items").hidden = estado.items.length > 0;
-  $("lista-items").replaceChildren(
-    ...estado.items.map((item, indice) => {
-      const fila = el(
-        "li",
-        { clase: "fila-item" },
-        el("span", { clase: "orden-item", texto: String(indice + 1) }),
-        el(
-          "div",
-          { clase: "resumen-item" },
-          el("strong", { texto: TITULOS_TIPO[item.tipo] ?? item.tipo }),
-          el("p", { texto: item.enunciado }),
-        ),
-        el("span", { clase: "tenue", texto: `${item.puntos} pts` }),
-      );
-      fila.addEventListener("click", () => abrirDialogoItem(item));
-      return fila;
-    }),
+  $("lista-items").replaceChildren(...estado.items.map((item, indice) => filaItem(item, indice, () => abrirDialogoItem(item))));
+}
+
+// -------------------------------------------------------- revisión final
+
+/** Antes de dar el examen por terminado: un repaso de todas las preguntas en
+ * un solo diálogo. Clic en cualquiera cierra la revisión y abre esa pregunta
+ * para editarla (reutiliza abrirDialogoItem); "Sí, están bien" solo cierra. */
+function configurarRevision() {
+  $("boton-revisar-examen").addEventListener("click", () => {
+    if (!estado.seleccionado) {
+      window.alert("Primero guarda los datos del examen (código, nombre) antes de revisar las preguntas.");
+      return;
+    }
+    pintarRevision();
+    $("dialogo-revision").showModal();
+  });
+  $("boton-listo-revision").addEventListener("click", () => $("dialogo-revision").close());
+}
+
+function pintarRevision() {
+  $("sin-items-revision").hidden = estado.items.length > 0;
+  $("lista-revision").replaceChildren(
+    ...estado.items.map((item, indice) =>
+      filaItem(item, indice, () => {
+        $("dialogo-revision").close();
+        abrirDialogoItem(item);
+      }),
+    ),
   );
 }
 
@@ -323,9 +356,20 @@ async function generarConIA() {
     pintarBorradores(resultado.data.preguntas ?? []);
   } catch (err) {
     console.error("[autoria] no se pudo generar preguntas:", err);
-    error.textContent = err?.message?.includes("permission-denied")
-      ? "No tienes permiso para generar preguntas en este examen."
-      : "No se pudo generar preguntas. Intenta de nuevo en un momento.";
+    // Antes esto se tapaba con un solo mensaje genérico sin importar la
+    // causa -- un docente viendo "intenta de nuevo" no tenía forma de saber
+    // que el problema real era, por ejemplo, "la IA no devolvió preguntas
+    // utilizables, prueba con un contenido más corto". El SDK de Functions
+    // pone en err.code el motivo exacto (ver functions/index.js, cada
+    // HttpsError) y en err.message el texto que ya escribimos pensando en
+    // que el docente lo lea -- mostrarlo tal cual es mejor que adivinar.
+    if (err?.code === "functions/permission-denied") {
+      error.textContent = "No tienes permiso para generar preguntas en este examen.";
+    } else if (err?.code === "functions/invalid-argument" || err?.code === "functions/internal") {
+      error.textContent = err.message || "No se pudo generar preguntas. Intenta de nuevo en un momento.";
+    } else {
+      error.textContent = "No se pudo generar preguntas. Intenta de nuevo en un momento.";
+    }
     error.hidden = false;
   } finally {
     boton.disabled = false;
@@ -587,7 +631,13 @@ async function importarLink() {
     $("contenido-url").value = "";
   } catch (err) {
     console.error("[autoria] no se pudo importar el link:", err);
-    error.textContent = "No se pudo importar ese link. Revisa que sea correcto y vuelve a intentar.";
+    // Mismo criterio que generarConIA: el servidor ya manda un mensaje
+    // pensado para el docente (URL inválida, página con error, sin texto
+    // legible...) -- mostrarlo tal cual en vez de uno genérico fijo.
+    error.textContent =
+      err?.code === "functions/invalid-argument" || err?.code === "functions/internal"
+        ? err.message || "No se pudo importar ese link."
+        : "No se pudo importar ese link. Revisa que sea correcto y vuelve a intentar.";
     error.hidden = false;
   } finally {
     boton.disabled = false;
