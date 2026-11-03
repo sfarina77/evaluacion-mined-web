@@ -94,8 +94,10 @@
         <!-- Biblioteca de contenidos (2026-11-03): guarda el contenido de
              una materia/grado/tema UNA vez, compartido entre docentes, para
              reutilizarlo cada vez que se generan preguntas -- en vez de
-             pegar el mismo texto cada vez. No hay subida de archivo todavía
-             (PDF/Word): solo texto pegado o escrito, ver README.md. -->
+             pegar el mismo texto cada vez. El texto se puede escribir a
+             mano, pegar, importar de un link (extraerContenidoWeb) o subir
+             como .txt/.pdf (pdf.js, ver autoria.js) -- Word no está
+             soportado todavía, ver README.md. -->
         <section class="biblioteca-contenidos">
           <h2 class="titulo-seccion">Biblioteca de contenidos</h2>
           <p class="tenue">Guarda el contenido de un tema una vez (materia, grado, tema + el texto) y reutilízalo en cualquier examen al generar preguntas con IA.</p>
@@ -111,7 +113,22 @@
               <input id="contenido-tema" type="text" placeholder="La fotosíntesis" />
             </label>
           </div>
-          <textarea id="contenido-texto" rows="4" placeholder="Pega aquí el contenido completo del tema (hasta 20,000 caracteres)..."></textarea>
+
+          <div class="fila-campos">
+            <label>O importar desde un link
+              <input id="contenido-url" type="url" placeholder="https://..." />
+            </label>
+            <button id="boton-importar-link" type="button" class="boton boton-secundario">Importar del link</button>
+          </div>
+          <div class="generador-controles">
+            <label class="campo-archivo">O subir un archivo (.txt o .pdf)
+              <input id="contenido-archivo" type="file" accept=".txt,.pdf,text/plain,application/pdf" />
+            </label>
+            <span id="contenido-importando" class="tenue" hidden>Leyendo…</span>
+          </div>
+          <p id="contenido-importar-error" class="mensaje-error" hidden></p>
+
+          <textarea id="contenido-texto" rows="4" placeholder="Pega aquí el contenido completo del tema (hasta 20,000 caracteres), o impórtalo de un link o un archivo arriba..."></textarea>
           <div class="generador-controles">
             <button id="boton-guardar-contenido" type="button" class="boton boton-secundario">Guardar en la biblioteca</button>
             <span id="contenido-guardando" class="tenue" hidden>Guardando…</span>

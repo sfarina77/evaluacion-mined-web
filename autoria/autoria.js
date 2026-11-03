@@ -484,6 +484,8 @@ function pintarSelectorContenidos() {
 
 function configurarBiblioteca() {
   $("boton-guardar-contenido").addEventListener("click", guardarContenido);
+  $("boton-importar-link").addEventListener("click", importarLink);
+  $("contenido-archivo").addEventListener("change", importarArchivo);
   $("boton-usar-contenido").addEventListener("click", () => {
     const id = $("selector-contenido").value;
     const contenido = estado.contenidos.get(id);
@@ -494,6 +496,100 @@ function configurarBiblioteca() {
     $("generador-contenido").value = contenido.texto;
     $("generador-contenido").scrollIntoView({ behavior: "smooth", block: "center" });
   });
+}
+
+// Mismo CDN y versión que ya se usó y verificó con curl en esta sesión --
+// esta build de pdf.js 4.0.379 se publica como .mjs (módulo ES), no .js.
+const PDF_JS_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs";
+const PDF_WORKER_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs";
+let pdfjsLibPromesa = null;
+
+function cargarPdfJs() {
+  // Se carga una sola vez y se reutiliza -- la mayoría de docentes no sube
+  // más de un PDF por sesión, pero si suben varios no hace falta repetir la
+  // descarga del propio pdf.js.
+  if (!pdfjsLibPromesa) {
+    pdfjsLibPromesa = import(PDF_JS_URL).then((lib) => {
+      lib.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL;
+      return lib;
+    });
+  }
+  return pdfjsLibPromesa;
+}
+
+async function leerPdf(archivo) {
+  const pdfjsLib = await cargarPdfJs();
+  const datos = await archivo.arrayBuffer();
+  const documento = await pdfjsLib.getDocument({ data: datos }).promise;
+  const paginas = [];
+  for (let n = 1; n <= documento.numPages; n++) {
+    const pagina = await documento.getPage(n);
+    const contenido = await pagina.getTextContent();
+    paginas.push(contenido.items.map((item) => item.str).join(" "));
+  }
+  return paginas.join("\n").slice(0, 20000);
+}
+
+async function importarArchivo() {
+  const campo = $("contenido-archivo");
+  const archivo = campo.files?.[0];
+  if (!archivo) return;
+
+  const error = $("contenido-importar-error");
+  error.hidden = true;
+  $("contenido-importando").hidden = false;
+  try {
+    let texto;
+    if (archivo.type === "application/pdf" || archivo.name.toLowerCase().endsWith(".pdf")) {
+      texto = await leerPdf(archivo);
+    } else {
+      // .txt u otro texto plano: lo que no sea PDF se trata como texto, sin
+      // intentar adivinar Word/otros formatos binarios -- ver README.md.
+      texto = (await archivo.text()).slice(0, 20000);
+    }
+    if (!texto.trim()) {
+      error.textContent = "No se encontró texto legible en ese archivo.";
+      error.hidden = false;
+      return;
+    }
+    $("contenido-texto").value = texto;
+  } catch (err) {
+    console.error("[autoria] no se pudo leer el archivo:", err);
+    error.textContent = "No se pudo leer ese archivo. Prueba con un .txt o un .pdf con texto (no solo imágenes escaneadas).";
+    error.hidden = false;
+  } finally {
+    $("contenido-importando").hidden = true;
+    campo.value = "";
+  }
+}
+
+async function importarLink() {
+  const url = $("contenido-url").value.trim();
+  const error = $("contenido-importar-error");
+  error.hidden = true;
+  if (!url) {
+    error.textContent = "Pega un link primero.";
+    error.hidden = false;
+    return;
+  }
+
+  const { ffn, fns } = estado.n;
+  const boton = $("boton-importar-link");
+  boton.disabled = true;
+  $("contenido-importando").hidden = false;
+  try {
+    const llamar = ffn.httpsCallable(fns, "extraerContenidoWeb");
+    const resultado = await llamar({ url });
+    $("contenido-texto").value = resultado.data.texto ?? "";
+    $("contenido-url").value = "";
+  } catch (err) {
+    console.error("[autoria] no se pudo importar el link:", err);
+    error.textContent = "No se pudo importar ese link. Revisa que sea correcto y vuelve a intentar.";
+    error.hidden = false;
+  } finally {
+    boton.disabled = false;
+    $("contenido-importando").hidden = true;
+  }
 }
 
 async function guardarContenido() {

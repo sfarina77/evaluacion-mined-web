@@ -120,6 +120,14 @@
   align-items: flex-end;
 }
 
+.campo-archivo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--texto-secundario);
+}
+
 #selector-contenido {
   width: 100%;
   padding: 9px 10px;
