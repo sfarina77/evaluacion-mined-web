@@ -24,7 +24,10 @@ const FOTO_INTERVALO_MIN_MS = 5_000; // ráfagas de eventos comparten foto
 export function crearReporteEnVivo({ examenId, nie }) {
   if (!nubeConfigurada()) {
     const nada = () => {};
-    return { iniciar: nada, evento: nada, estado: nada, cerrar: () => Promise.resolve() };
+    // sesionId: null a propósito -- un examen "de autoría" (reproductor.js)
+    // necesita Firestore para existir; sin nube configurada no hay dónde
+    // guardar items/respuestas, así que no hay sesión que referenciar.
+    return { iniciar: nada, evento: nada, estado: nada, cerrar: () => Promise.resolve(), sesionId: null };
   }
 
   const sesionId = crypto.randomUUID();
@@ -157,5 +160,8 @@ export function crearReporteEnVivo({ examenId, nie }) {
     return Promise.race([cola, new Promise((ok) => setTimeout(ok, 4000))]);
   }
 
-  return { iniciar, evento, estado, cerrar };
+  // sesionId se expone para que reproductor.js (examen "de autoría") escriba
+  // las respuestas del estudiante bajo la MISMA sesión que ya ve el docente
+  // en vivo -- alertas de supervisión y respuestas del examen quedan juntas.
+  return { iniciar, evento, estado, cerrar, sesionId };
 }

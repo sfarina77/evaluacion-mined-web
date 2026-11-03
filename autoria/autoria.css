@@ -1,0 +1,163 @@
+/* Propio de la autoría (autoria/index.html). Reutiliza variables, botones,
+   diálogos y tarjetas de docente/panel.css -- esto solo agrega el layout del
+   editor de examen/preguntas que el panel en vivo no necesita. */
+
+.barra-derecha {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.autoria-panel {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: calc(100vh - 57px);
+}
+
+.boton-nuevo {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.contenido {
+  padding: 24px;
+  max-width: 860px;
+}
+
+.titulo-seccion {
+  font-size: 1rem;
+  margin: 28px 0 10px;
+}
+
+/* ------------------------------------------------------------- formulario */
+
+.form-examen {
+  display: grid;
+  gap: 12px;
+  max-width: 720px;
+}
+
+.fila-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.form-examen label,
+#form-item label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--texto-secundario);
+}
+
+.form-examen input,
+#form-item input,
+#form-item select,
+#form-item textarea {
+  padding: 9px 10px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  color: var(--texto);
+  font: inherit;
+}
+
+/* ------------------------------------------------------------- preguntas */
+
+.lista-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.fila-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.fila-item:hover {
+  border-color: var(--borde-acento);
+}
+
+.orden-item {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--superficie-alta);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.resumen-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.resumen-item p {
+  margin: 2px 0 0;
+  color: var(--texto-secundario);
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- diálogo */
+
+.dialogo-item {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
+}
+
+#form-item {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  overflow-y: auto;
+  max-height: calc(100vh - 48px);
+}
+
+.campo-medio,
+.campo-opciones,
+.campo-rubrica {
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.campo-medio legend {
+  padding: 0 6px;
+  font-size: 0.8rem;
+  color: var(--texto-secundario);
+}
+
+.boton-peligro {
+  background: transparent;
+  border: 1px solid var(--grave);
+  color: var(--grave);
+}
+
+@media (max-width: 720px) {
+  .autoria-panel {
+    grid-template-columns: 1fr;
+  }
+  .contenido {
+    padding: 16px;
+  }
+}

@@ -358,6 +358,72 @@ textarea {
   text-align: center;
 }
 
+/* ------------------------------------------------- revisión (autoría) */
+
+.titulo-revision {
+  font-size: 1rem;
+  margin: 32px 0 10px;
+}
+
+.lista-revision {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.fila-revision {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.fila-revision .encabezado-revision {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: var(--texto-secundario);
+}
+
+.fila-revision .respuesta-revision {
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.fila-revision img {
+  max-width: 240px;
+  border-radius: 6px;
+}
+
+.fila-revision .sugerencia-ia {
+  background: var(--superficie-alta);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+}
+
+.fila-revision .controles-revision {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fila-revision input[type="number"] {
+  width: 70px;
+  padding: 6px 8px;
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  color: var(--texto);
+  font: inherit;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

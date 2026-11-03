@@ -1,6 +1,7 @@
 import { obtener as obtenerExamenes, normalizarUrlExamen } from "./examenConfig.js";
 import { nieValido } from "../sesion/nie.js";
 import { pantallaExtendida } from "../examen/entorno.js";
+import { nube, nubeConfigurada } from "../nube/nube.js";
 
 // Examen de prueba embebido, igual que EXAMENES_LOCALES en el cliente Windows
 // y en LoginActivity de Android: permite probar el flujo completo sin
@@ -73,6 +74,18 @@ export function inicializarLogin({ onIniciar }) {
 
     botonIniciar.disabled = true;
     try {
+      // Un examen "de autoría" (plataforma de autoría, 2026-11-03) vive en
+      // Firestore, no en examenes.json -- se prueba primero ahí (si hay
+      // nube configurada) y solo si no existe se sigue con el camino de
+      // siempre (red -> caché -> local). Así un código de GitHub sigue
+      // funcionando exactamente igual que hoy; esto es pura adición.
+      const infoAutoria = await buscarExamenDeAutoria(codigo);
+      if (infoAutoria) {
+        vista.hidden = true;
+        onIniciar({ examenId: codigo, nie, info: infoAutoria });
+        return;
+      }
+
       const { examenes } = await obtenerExamenes(EXAMENES_LOCALES);
       const info = examenes[codigo];
       if (!info) {
@@ -92,4 +105,32 @@ export function inicializarLogin({ onIniciar }) {
       botonIniciar.disabled = false;
     }
   });
+}
+
+/**
+ * Busca `codigo` en Firestore. Devuelve `info` (sin `url`: el reproductor
+ * renderiza sus propias preguntas) si es un examen "de autoría", o `null` si
+ * no existe ahí -- en ese caso el llamador sigue con examenes.json, igual que
+ * siempre. Nunca lanza: sin nube configurada, o sin red, simplemente no hay
+ * examen de autoría que encontrar.
+ */
+async function buscarExamenDeAutoria(codigo) {
+  if (!nubeConfigurada()) return null;
+  try {
+    const { db, fs, auth, fa } = await nube();
+    if (!auth.currentUser) await fa.signInAnonymously(auth);
+    const doc = await fs.getDoc(fs.doc(db, "examenes", codigo));
+    if (!doc.exists() || doc.data().modo !== "autoria") return null;
+    const datos = doc.data();
+    return {
+      nombre: datos.nombre ?? codigo,
+      modo: "autoria",
+      pin_salida: datos.pin_salida ?? "0000",
+      clave_reingreso: datos.clave_reingreso ?? "1111",
+      advertencias_evasion: datos.advertencias_evasion,
+    };
+  } catch (error) {
+    console.error("[login] no se pudo consultar Firestore para el examen de autoría:", error);
+    return null;
+  }
 }

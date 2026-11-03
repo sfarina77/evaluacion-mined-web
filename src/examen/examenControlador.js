@@ -5,6 +5,7 @@ import { crearDetector } from "../deteccion/proctorDetector.js";
 import { guardarYEncolar } from "../sesion/colaSubida.js";
 import { pantallaExtendida } from "./entorno.js";
 import { crearReporteEnVivo } from "../sesion/reporteEnVivo.js";
+import { crearReproductor } from "./reproductor.js";
 
 /**
  * Controlador de la pantalla de examen: iframe + bloqueo a nivel de
@@ -27,6 +28,8 @@ import { crearReporteEnVivo } from "../sesion/reporteEnVivo.js";
 export function iniciarExamen({ examenId, nie, info }) {
   const vista = document.getElementById("vista-examen");
   const marco = document.getElementById("marco-examen");
+  const contenedorReproductor = document.getElementById("contenedor-reproductor");
+  const esAutoria = info.modo === "autoria";
   const bannerAviso = document.getElementById("banner-aviso");
   const overlayBloqueo = document.getElementById("overlay-bloqueo");
   const gatilloSalida = document.getElementById("gatillo-salida-pin");
@@ -90,7 +93,14 @@ export function iniciarExamen({ examenId, nie, info }) {
   // --------------------------------------------------------------- arranque
 
   vista.hidden = false;
-  marco.src = info.url;
+  // Examen "de autoría" (plataforma de autoría, 2026-11-03): el contenido es
+  // propio, renderizado nativamente por reproductor.js -- no hay iframe ni
+  // info.url. El resto (pantalla completa, detección de evasión, gatillo de
+  // salida) es exactamente el mismo código, porque sigue siendo la misma
+  // página: la evasión no sabe ni le importa si lo que se tapó era un
+  // iframe o un <div>.
+  if (esAutoria) marco.hidden = true;
+  else marco.src = info.url;
 
   // El navegador rechaza la pantalla completa si el clic del login ya no es
   // "reciente" (la lista de exámenes se baja en medio): en ese caso el
@@ -123,6 +133,30 @@ export function iniciarExamen({ examenId, nie, info }) {
         advertencias: 0,
         maxAdvertencias,
       });
+      if (esAutoria) {
+        if (!reporte.sesionId) {
+          // Sin nube configurada no hay dónde guardar items/respuestas -- un
+          // examen "de autoría" no puede rendirse así, a diferencia de uno
+          // externo (que solo necesita el link). Se avisa en vez de dejar la
+          // pantalla en blanco sin explicación.
+          contenedorReproductor.hidden = false;
+          contenedorReproductor.textContent =
+            "Este examen necesita conexión a la nube y todavía no está disponible. Avisa a tu docente.";
+        } else {
+          crearReproductor({
+            contenedor: contenedorReproductor,
+            examenId,
+            nie,
+            sesionId: reporte.sesionId,
+          })
+            .iniciar()
+            .catch((error) => {
+              console.error("[examen] no se pudo cargar el reproductor:", error);
+              contenedorReproductor.hidden = false;
+              contenedorReproductor.textContent = "No se pudieron cargar las preguntas. Avisa a tu docente.";
+            });
+        }
+      }
       if (!document.fullscreenElement) overlayInicio.hidden = false;
     })
     .catch((error) => {

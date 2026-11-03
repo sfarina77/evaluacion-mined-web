@@ -40,14 +40,75 @@ service cloud.firestore {
     }
 
     match /examenes/{codigo} {
-      allow read: if esAdmin() || (esDocente() && correo() in resource.data.docentes);
-      allow create, update: if esAdmin()
-        && request.resource.data.keys().hasOnly(['nombre', 'docentes'])
+      // Ampliado (2026-11-03): el reproductor (src/examen/reproductor.js)
+      // necesita leer este documento ANTES de empezar el examen, desde la
+      // sesión anónima del estudiante -- igual que hoy el PIN de salida y la
+      // clave de reingreso de un examen externo viven, sin autenticación
+      // siquiera, en examenes.json (público en GitHub). No es ideal, pero no
+      // es un retroceso: acá por lo menos hace falta una sesión de Firebase.
+      // Arreglarlo de raíz (que el servidor valide el PIN, no el navegador)
+      // es un cambio más grande que esta fase -- ver docs/ para no repetir
+      // este análisis si se retoma.
+      allow read: if autenticado();
+
+      // Antes: solo un admin podía crear un examen. La autoría (2026-11-03)
+      // necesita que CUALQUIER docente cree el suyo propio sin esperar a que
+      // un admin lo dé de alta primero -- por eso ahora también puede
+      // esDocente(), con la condición de que se incluya a sí mismo en
+      // `docentes` (no puede crear/editar un examen y dejarse afuera, ni
+      // quitarse a sí mismo pensando que "limpia" el acceso de otro).
+      allow create: if (esAdmin() || esDocente())
+        && request.resource.data.keys().hasOnly(
+             ['nombre', 'docentes', 'colegio', 'grado', 'seccion', 'modo',
+              'pin_salida', 'clave_reingreso', 'advertencias_evasion'])
         && request.resource.data.nombre is string
         && request.resource.data.nombre.size() <= 120
         && request.resource.data.docentes is list
-        && request.resource.data.docentes.size() <= 50;
+        && request.resource.data.docentes.size() <= 50
+        && (esAdmin() || correo() in request.resource.data.docentes);
+      allow update: if docenteDe(codigo)
+        && request.resource.data.keys().hasOnly(
+             ['nombre', 'docentes', 'colegio', 'grado', 'seccion', 'modo',
+              'pin_salida', 'clave_reingreso', 'advertencias_evasion'])
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() <= 120
+        && request.resource.data.docentes is list
+        && request.resource.data.docentes.size() <= 50
+        && (esAdmin() || correo() in request.resource.data.docentes);
       allow delete: if esAdmin();
+
+      // Plataforma de autoría (2026-11-03): preguntas de un examen "de
+      // autoría" (modo == "autoria"). SOLO los campos que el estudiante debe
+      // poder ver para contestar -- la respuesta correcta y la rúbrica NUNCA
+      // van acá, viven en /claves (ver abajo) que el estudiante no puede
+      // leer. Sin esta separación, cualquiera con las herramientas de
+      // desarrollador del navegador podría leer la clave de Firestore antes
+      // de responder -- un docente autenticado no es "de fiar" para esto,
+      // igual que el cliente de proctoring no es de fiar para su propio
+      // conteo de alertas (ver motor_alertas_spec.md).
+      match /items/{itemId} {
+        allow read: if autenticado(); // cualquier sesión (incluida anónima del estudiante)
+        allow write: if docenteDe(codigo)
+          && request.resource.data.keys().hasOnly(
+               ['orden', 'tipo', 'enunciado', 'medio', 'opciones', 'puntos'])
+          && request.resource.data.tipo in
+               ['seleccion_simple', 'seleccion_multiple', 'interpretacion', 'respuesta_completa', 'pizarra']
+          && request.resource.data.enunciado is string
+          && request.resource.data.enunciado.size() <= 2000
+          && request.resource.data.puntos is number
+          && request.resource.data.puntos > 0
+          && request.resource.data.puntos <= 100;
+      }
+
+      // Clave de respuesta y rúbrica: SOLO el docente/admin del examen puede
+      // leerla. La función en la nube (nube/functions, Admin SDK) también
+      // puede leerla porque el Admin SDK no pasa por estas reglas -- es la
+      // única pieza que debe verlas para calificar.
+      match /claves/{itemId} {
+        allow read: if docenteDe(codigo);
+        allow write: if docenteDe(codigo)
+          && request.resource.data.keys().hasOnly(['respuestaCorrecta', 'rubrica']);
+      }
     }
 
     match /sesiones/{sesionId} {
@@ -70,7 +131,7 @@ service cloud.firestore {
 
       match /eventos/{eventoId} {
         // examenId y nie se duplican acá (ya están en la sesión padre) para
-        // que la consola de administración (docente/admin.js) pueda filtrar
+        // que la consola de administración (dashboard/dashboard.js) pueda filtrar
         // la galería de evidencia con una sola collectionGroup query, sin un
         // get() por evento -- deben COINCIDIR con la sesión, nunca los inventa
         // el cliente, para que nadie pueda "mover" un evento a otro examen.
@@ -93,20 +154,62 @@ service cloud.firestore {
                   && request.resource.data.foto.matches('^data:image/jpeg;base64,.*')));
         allow read: if docenteDe(get(/databases/$(database)/documents/sesiones/$(sesionId)).data.examenId);
       }
+
+      // Respuestas de un examen "de autoría" (plataforma de autoría,
+      // 2026-11-03). El estudiante solo escribe su respuesta CRUDA -- nunca
+      // una calificación: calificacionAuto/calificacionIA/calificacionFinal/
+      // estado los pone la función en la nube (Admin SDK, no pasa por estas
+      // reglas) después de comparar contra /claves. Si se dejara que el
+      // cliente escribiera su propia nota, un estudiante podría ponerse el
+      // puntaje máximo con el inspector del navegador.
+      match /respuestas/{itemId} {
+        allow create: if autenticado()
+          && get(/databases/$(database)/documents/sesiones/$(sesionId)).data.uid == request.auth.uid
+          && request.resource.data.keys().hasOnly(
+               ['tipo', 'respuesta', 'foto', 't', 'ts', 'examenId', 'nie', 'uid'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.ts == request.time
+          && request.resource.data.examenId
+               == get(/databases/$(database)/documents/sesiones/$(sesionId)).data.examenId
+          && request.resource.data.nie
+               == get(/databases/$(database)/documents/sesiones/$(sesionId)).data.nie
+          && (request.resource.data.foto == null
+              || (request.resource.data.foto is string
+                  && request.resource.data.foto.size() < 150000
+                  && request.resource.data.foto.matches('^data:image/jpeg;base64,.*')));
+        allow read: if docenteDe(get(/databases/$(database)/documents/sesiones/$(sesionId)).data.examenId)
+          || (autenticado() && resource.data.uid == request.auth.uid);
+        // El docente confirma o corrige la calificación sugerida por la IA
+        // (interpretación/respuesta_completa) o pone la nota de la pizarra
+        // (revisión manual, nunca calificada por IA). Solo puede tocar
+        // calificacionFinal/estado -- no puede reescribir la respuesta del
+        // estudiante ni lo que ya calculó la función en la nube.
+        allow update: if docenteDe(get(/databases/$(database)/documents/sesiones/$(sesionId)).data.examenId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['calificacionFinal', 'estado'])
+          && request.resource.data.estado == 'calificada';
+      }
     }
 
-    // Consola de administración (docente/admin.js): collectionGroup query
-    // sobre TODAS las subcolecciones "eventos" para la galería/analítica
-    // multi-examen. Una regla anidada (la de arriba) NO alcanza para una
-    // collectionGroup query -- Firestore exige esta forma con {path=**} para
-    // autorizarlas (documentado así por Firebase). `path` captura el prefijo
-    // ("sesiones/{sesionId}") y $(path) lo reinyecta tal cual en el get(), sin
-    // indexarlo a mano. Esto NO amplía el acceso real: un admin ya podía leer
-    // cualquier evento uno por uno (docenteDe() da true para esAdmin() sin
-    // importar el examen); lo único nuevo es poder traerlos todos en una sola
-    // consulta. Un docente normal solo recibiría los de sus propios exámenes,
-    // igual que ya filtra la regla anidada documento por documento.
+    // Consola de administración (dashboard/dashboard.js): collectionGroup
+    // query sobre TODAS las subcolecciones "eventos" para la galería/
+    // analítica multi-examen. Una regla anidada (la de arriba) NO alcanza
+    // para una collectionGroup query -- Firestore exige esta forma con
+    // {path=**} para autorizarlas (documentado así por Firebase). `path`
+    // captura el prefijo ("sesiones/{sesionId}") y $(path) lo reinyecta tal
+    // cual en el get(), sin indexarlo a mano. Esto NO amplía el acceso real:
+    // un admin ya podía leer cualquier evento uno por uno (docenteDe() da
+    // true para esAdmin() sin importar el examen); lo único nuevo es poder
+    // traerlos todos en una sola consulta. Un docente normal solo recibiría
+    // los de sus propios exámenes, igual que ya filtra la regla anidada
+    // documento por documento.
     match /{path=**}/eventos/{eventoId} {
+      allow read: if docenteDe(get(/databases/$(database)/documents/$(path)).data.examenId);
+    }
+
+    // Mismo mecanismo que arriba, para que el docente (panel.js) pueda ver
+    // "respuestas pendientes de revisión" de TODOS sus estudiantes de un
+    // examen con una sola consulta, en vez de abrir sesión por sesión.
+    match /{path=**}/respuestas/{itemId} {
       allow read: if docenteDe(get(/databases/$(database)/documents/$(path)).data.examenId);
     }
   }

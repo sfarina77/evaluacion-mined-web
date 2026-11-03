@@ -146,6 +146,87 @@ input::placeholder {
   border: none;
 }
 
+/* ------------------------------------------------- reproductor (autoría) */
+
+.contenedor-reproductor {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  background: var(--fondo-examen);
+  color: var(--texto-principal);
+  display: flex;
+  justify-content: center;
+}
+
+.reproductor-pregunta {
+  width: min(720px, calc(100vw - 48px));
+  padding: 48px 0 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.reproductor-progreso {
+  color: var(--texto-secundario);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.reproductor-medio-imagen {
+  max-width: 100%;
+  border-radius: 10px;
+}
+
+.reproductor-medio-video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: none;
+  border-radius: 10px;
+}
+
+.reproductor-respuesta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reproductor-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--superficie-campo);
+  border: 1px solid var(--borde-campo);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.reproductor-texto {
+  width: 100%;
+  padding: 12px;
+  background: var(--superficie-campo);
+  border: 1px solid var(--borde-campo);
+  border-radius: 8px;
+  color: var(--texto-principal);
+  font: inherit;
+  resize: vertical;
+}
+
+.reproductor-pizarra {
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 3 / 2;
+  background: #ffffff;
+  border-radius: 8px;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.reproductor-fin {
+  text-align: center;
+  padding-top: 20vh;
+}
+
 .banner-aviso {
   position: absolute;
   top: 0;

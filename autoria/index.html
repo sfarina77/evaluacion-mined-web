@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es-SV">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Autoría de exámenes — Evaluación MINED</title>
+<link rel="stylesheet" href="../docente/panel.css" />
+<link rel="stylesheet" href="autoria.css" />
+</head>
+<body>
+
+  <header class="barra">
+    <div class="marca">Evaluación MINED <span>· Autoría</span></div>
+    <div class="barra-derecha">
+      <a href="../docente/" class="boton-texto">Panel en vivo</a>
+      <div id="usuario" class="usuario" hidden>
+        <span id="correo-usuario"></span>
+        <button id="boton-salir" type="button" class="boton-texto">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="vista-entrada" class="centrado" hidden>
+    <div class="tarjeta tarjeta-entrada">
+      <h1>Autoría de exámenes</h1>
+      <p>Entra con tu cuenta institucional <strong>@edu.gob.sv</strong> para crear o editar tus exámenes.</p>
+      <button id="boton-google" type="button" class="boton boton-primario">Entrar con Google</button>
+      <p id="mensaje-entrada" class="mensaje-error" hidden></p>
+    </div>
+  </main>
+
+  <main id="vista-sin-config" class="centrado" hidden>
+    <div class="tarjeta tarjeta-entrada">
+      <h1>No disponible</h1>
+      <p>Todavía no está conectado a su base de datos.</p>
+    </div>
+  </main>
+
+  <main id="vista-autoria" class="autoria-panel" hidden>
+    <aside class="lateral">
+      <h2>Mis exámenes</h2>
+      <ul id="lista-examenes" class="lista-examenes"></ul>
+      <button id="boton-nuevo-examen" type="button" class="boton boton-primario boton-nuevo">+ Nuevo examen</button>
+    </aside>
+
+    <section class="contenido">
+      <div id="sin-seleccion" class="centrado tenue">Elige un examen o crea uno nuevo.</div>
+
+      <div id="editor-examen" hidden>
+        <h1 id="titulo-examen"></h1>
+
+        <form id="form-examen" class="form-examen">
+          <div class="fila-campos">
+            <label>Código
+              <input id="campo-codigo" type="text" placeholder="EXAM202" required />
+            </label>
+            <label>Nombre
+              <input id="campo-nombre" type="text" placeholder="Matemática — Unidad 3" required />
+            </label>
+          </div>
+          <div class="fila-campos">
+            <label>Colegio
+              <input id="campo-colegio" type="text" />
+            </label>
+            <label>Grado
+              <input id="campo-grado" type="text" placeholder="6º grado" />
+            </label>
+            <label>Sección
+              <input id="campo-seccion" type="text" placeholder="A" />
+            </label>
+          </div>
+          <div class="fila-campos">
+            <label>PIN de salida
+              <input id="campo-pin" type="text" placeholder="0000" />
+            </label>
+            <label>Clave de reingreso (del docente)
+              <input id="campo-clave" type="text" placeholder="1111" />
+            </label>
+            <label>Advertencias antes de bloquear
+              <input id="campo-advertencias" type="number" min="1" max="20" placeholder="5" />
+            </label>
+          </div>
+          <p class="tenue">El estudiante solo necesita este código y su NIE/DUI para entrar -- colegio, grado,
+            sección y docentes quedan configurados acá, una sola vez.</p>
+          <button type="submit" class="boton boton-primario">Guardar examen</button>
+          <p id="mensaje-examen" class="tenue" hidden></p>
+        </form>
+
+        <h2 class="titulo-seccion">Preguntas</h2>
+        <ol id="lista-items" class="lista-items"></ol>
+        <p id="sin-items" class="tenue" hidden>Todavía no hay preguntas. Agrega la primera abajo.</p>
+
+        <button id="boton-agregar-item" type="button" class="boton boton-secundario">+ Agregar pregunta</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Editor de una pregunta -->
+  <dialog id="dialogo-item" class="dialogo-item">
+    <form id="form-item">
+      <h2 id="titulo-dialogo-item">Nueva pregunta</h2>
+
+      <label>Tipo de pregunta
+        <select id="item-tipo">
+          <option value="seleccion_simple">Selección simple</option>
+          <option value="seleccion_multiple">Selección múltiple</option>
+          <option value="interpretacion">Interpretación (texto corto)</option>
+          <option value="respuesta_completa">Respuesta completa (texto largo)</option>
+          <option value="pizarra">Pizarra (dibujo o escritura a mano)</option>
+        </select>
+      </label>
+
+      <label>Enunciado
+        <textarea id="item-enunciado" rows="3" required></textarea>
+      </label>
+
+      <fieldset class="campo-medio">
+        <legend>Medio (opcional)</legend>
+        <div class="fila-campos">
+          <label>Tipo
+            <select id="item-medio-tipo">
+              <option value="">Ninguno</option>
+              <option value="imagen">Imagen (link)</option>
+              <option value="video">Video (link, p. ej. YouTube)</option>
+              <option value="link">Otro link</option>
+            </select>
+          </label>
+          <label>URL
+            <input id="item-medio-url" type="url" placeholder="https://..." />
+          </label>
+        </div>
+        <p class="tenue">Fase 1: solo links embebidos, todavía no se sube el archivo directo -- ver README.md.</p>
+      </fieldset>
+
+      <div id="campo-opciones" class="campo-opciones">
+        <label>Opciones (una por línea)
+          <textarea id="item-opciones" rows="4" placeholder="Opción A&#10;Opción B&#10;Opción C"></textarea>
+        </label>
+        <label>Cuál(es) son correctas (igual que están escritas arriba, una por línea)
+          <textarea id="item-correctas" rows="2" placeholder="Opción B"></textarea>
+        </label>
+      </div>
+
+      <div id="campo-rubrica" class="campo-rubrica" hidden>
+        <label>Rúbrica (guía para la IA y para ti al revisar)
+          <textarea id="item-rubrica" rows="3" placeholder="Debe mencionar..."></textarea>
+        </label>
+        <p class="tenue">La IA sugiere un puntaje con esta rúbrica; tú confirmas o corriges antes de que cuente.</p>
+      </div>
+
+      <label>Puntos
+        <input id="item-puntos" type="number" min="1" max="100" value="10" required />
+      </label>
+
+      <p id="mensaje-item" class="mensaje-error" hidden></p>
+      <div class="fila-botones">
+        <button id="boton-guardar-item" type="submit" class="boton boton-primario">Guardar</button>
+        <button id="boton-eliminar-item" type="button" class="boton boton-secundario boton-peligro" hidden>Eliminar</button>
+        <button id="boton-cancelar-item" type="button" class="boton boton-secundario">Cancelar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="autoria.js"></script>
+</body>
+</html>

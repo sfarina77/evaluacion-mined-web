@@ -32,6 +32,10 @@
 
   <main id="vista-examen" class="pantalla" hidden>
     <iframe id="marco-examen" title="Examen" allow="fullscreen"></iframe>
+    <!-- Examen "de autoría" (plataforma de autoría, src/examen/reproductor.js):
+         reemplaza el iframe de arriba cuando el contenido es propio, no una
+         URL externa. Misma pantalla, mismo bloqueo/detección de evasión. -->
+    <div id="contenedor-reproductor" class="contenedor-reproductor" hidden></div>
 
     <div id="banner-aviso" class="banner-aviso" hidden></div>
 

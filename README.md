@@ -142,15 +142,82 @@ firebase deploy --only firestore:rules,firestore:indexes --project evaluacionsv
   `get()` por evento, y se agregó la regla `match /{path=**}/eventos/{eventoId}` que exige Firestore
   para permitir una collectionGroup query (sin ella, la consola no puede leer across-sesiones). No
   amplía quién puede ver qué: un admin ya podía leer cualquier evento antes, uno por uno.
-- `nube/firestore.indexes.json` existe pero hoy está vacío: las consultas de la consola usan rango
-  simple en un solo campo (`inicio`/`ts`) con el mismo campo en `orderBy`, que Firestore indexa
-  automáticamente. Si el navegador muestra un error con un enlace para crear un índice (pasa si se
-  amplían los filtros más adelante), ese enlace ya hace el trabajo -- después conviene exportar ese
-  índice nuevo a este archivo para que quede versionado, no solo en la consola de Firebase.
+- `nube/firestore.indexes.json` ya no está vacío (ver la sección de autoría más abajo): tiene el
+  índice compuesto que necesita el panel para la cola de revisión. Las consultas de la galería del
+  dashboard siguen sin necesitar ninguno (rango simple en un solo campo). Si el navegador muestra un
+  error con un enlace para crear un índice que falte, ese enlace ya hace el trabajo -- después
+  conviene exportar ese índice nuevo a este archivo para que quede versionado.
 - Los eventos escritos ANTES de este cambio no tienen `examenId`/`nie` propios, así que no van a
   aparecer en los filtros de la consola (sí van a seguir viéndose en el panel en vivo de siempre,
   que no depende de esos campos). Es un costo aceptado, no un bug: no tiene sentido reescribir
   eventos viejos solo para esto.
+
+## Plataforma de autoría (`autoria/`, `functions/`)
+
+Un docente crea un examen con sus propias preguntas (selección simple/múltiple, interpretación,
+respuesta completa, o una pizarra para dibujar/escribir a mano) en vez de apuntar a una URL externa
+-- `evaluacionsv.com/autoria`. El estudiante sigue sin ver nada distinto para entrar: código + NIE,
+igual que siempre; colegio/grado/sección/docentes quedan en la configuración del examen, no los
+escribe el estudiante.
+
+**Quién calcula la nota, y por qué importa:** el navegador del estudiante NUNCA califica ni manda su
+propia nota -- manda la respuesta cruda, y una Cloud Function (`functions/index.js`, con permisos de
+administrador) es quien compara contra la clave real y escribe la calificación. La clave de
+respuesta y la rúbrica viven en `examenes/{codigo}/claves/{itemId}`, un documento separado de la
+pregunta que el estudiante SÍ puede leer (`examenes/{codigo}/items/{itemId}`) -- sin esa separación,
+cualquiera con las herramientas de desarrollador del navegador podría leer la respuesta correcta
+antes de contestar, o escribirse el puntaje máximo directamente en Firestore.
+
+**Selección simple/múltiple:** se califica sola, sin IA, todo o nada (sin crédito parcial en
+selección múltiple todavía -- la fórmula queda pendiente de que el stakeholder la defina).
+
+**Interpretación / respuesta completa:** Claude sugiere un puntaje y una justificación a partir de
+la rúbrica del docente, pero **no es la nota final** -- por indicación directa (2026-11-03): la
+evidencia (estudios de LLM calificando respuestas de estudiantes de 5-16 años) muestra que los
+modelos califican cerca del nivel humano en respuestas cerradas, pero peor en las abiertas/
+subjetivas. El docente confirma o corrige desde el panel en vivo (`docente/index.html`, sección
+"Respuestas por revisar") antes de que cuente.
+
+**Pizarra:** sin calificación automática ni de IA -- no hay reconocimiento de letra manuscrita
+confiable para niños en este alcance. Se captura como una foto (mismo mecanismo que la evidencia de
+cámara: JPEG chico en base64) y queda directo para que el docente la revise y ponga la nota.
+
+**Medios (imagen/video/link):** fase 1 solo admite **links embebidos** (una imagen ya alojada en
+algún lado, un video de YouTube/Vimeo o un archivo de video directo) -- todavía no hay botón de
+"subir archivo". Subir el archivo real necesitaría Firebase Storage, una pieza de infraestructura
+nueva que no se activó en esta fase. Un video se incrusta siempre dentro de la misma página (nunca
+en pestaña/ventana nueva): abrir una pestaña nueva dispararía la detección de evasión del
+proctoring para algo que el estudiante hizo bien.
+
+**Generación de imagen/video por IA:** deliberadamente fuera de esta fase. Claude no genera
+imágenes ni video -- hace falta un proveedor aparte (p. ej. Gemini/Imagen, Synthesia), que es una
+integración, un costo y una revisión legal propios. Se evalúa después de probar esto en producción.
+
+### Qué hace falta desplegar, y que NO se puede hacer desde este entorno
+
+Tres cosas, todas gatilladas por el mismo motivo: necesitan credenciales/decisiones que un agente no
+debe tomar ni manipular sin que alguien lo vea.
+
+1. **Habilitar el plan de pago (Blaze) del proyecto `evaluacionsv`.** Cloud Functions no corre en el
+   plan gratuito. Esto es lo mismo que ya bloqueaba el TTL de 90 días de las fotos (ver nota en
+   `docs/project_evaluacion_mined_web` del repositorio de memoria) -- conviene resolver las dos
+   cosas en la misma visita a la consola de Firebase.
+2. **Darle a la función la clave de la API de Claude**, sin que quede escrita en ningún archivo del
+   repositorio:
+   ```bash
+   firebase functions:secrets:set ANTHROPIC_API_KEY --project evaluacionsv
+   ```
+3. **Desplegar reglas, índices y la función**, con una cuenta que tenga login interactivo de Google
+   (el CLI no acepta credenciales de servicio sin ese paso la primera vez):
+   ```bash
+   cd apps/cliente-web
+   npx firebase-tools login
+   npx firebase-tools deploy --only firestore:rules,firestore:indexes,functions --project evaluacionsv
+   ```
+
+Antes de activarlo con estudiantes reales: confirmar el ID exacto del modelo de Claude en
+`functions/claudeClient.js` contra la documentación vigente de Anthropic (se dejó sin la fecha de
+snapshot a propósito, porque inventarla desde acá habría sido adivinar).
 
 ## Pendiente, no bloqueante
 

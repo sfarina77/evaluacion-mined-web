@@ -2,5 +2,11 @@
   "firestore": {
     "rules": "nube/firestore.rules",
     "indexes": "nube/firestore.indexes.json"
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default"
+    }
+  ]
 }

@@ -23,9 +23,11 @@ const estado = {
   infoExamenes: {}, // examenes.json: url, claves
   seleccionado: null,
   sesiones: [],
+  revision: [], // respuestas pendientes (autoría), con _sesionId e id del item
   desuscribirExamenes: null,
   desuscribirSesiones: null,
   desuscribirEventos: null,
+  desuscribirRevision: null,
 };
 
 function mostrar(vista) {
@@ -117,7 +119,7 @@ async function entrar(usuario) {
 }
 
 function limpiarSuscripciones() {
-  for (const clave of ["desuscribirExamenes", "desuscribirSesiones", "desuscribirEventos"]) {
+  for (const clave of ["desuscribirExamenes", "desuscribirSesiones", "desuscribirEventos", "desuscribirRevision"]) {
     estado[clave]?.();
     estado[clave] = null;
   }
@@ -181,6 +183,104 @@ function seleccionar(codigo) {
     },
     (error) => console.error("sesiones:", error),
   );
+
+  // Plataforma de autoría (2026-11-03): respuestas que la función en la nube
+  // dejó en "pendiente_revision" (interpretación/respuesta completa con
+  // sugerencia de IA, o pizarra para calificar a mano). collectionGroup
+  // porque están repartidas entre las subcolecciones de cada sesión -- ver
+  // nube/firestore.rules, misma idea que ya usa dashboard/dashboard.js con
+  // "eventos".
+  estado.desuscribirRevision?.();
+  const consultaRevision = fs.query(
+    fs.collectionGroup(db, "respuestas"),
+    fs.where("examenId", "==", codigo),
+    fs.where("estado", "==", "pendiente_revision"),
+  );
+  estado.desuscribirRevision = fs.onSnapshot(
+    consultaRevision,
+    (foto) => {
+      estado.revision = foto.docs.map((d) => ({
+        itemId: d.id,
+        sesionId: d.ref.parent.parent.id,
+        ...d.data({ serverTimestamps: "estimate" }),
+      }));
+      pintarRevision();
+    },
+    (error) => console.error("revision:", error),
+  );
+}
+
+// -------------------------------------------------------- revisión (autoría)
+
+function pintarRevision() {
+  $("sin-revision").hidden = estado.revision.length > 0;
+  $("lista-revision").replaceChildren(
+    ...estado.revision.map((respuesta) => {
+      const sugerido = respuesta.calificacionIA?.puntos;
+      const campoPuntos = el("input");
+      campoPuntos.type = "number";
+      campoPuntos.min = "0";
+      campoPuntos.step = "0.5";
+      if (sugerido != null) campoPuntos.value = String(sugerido);
+
+      const botonConfirmar = el("button", { clase: "boton boton-primario", texto: "Confirmar calificación" });
+      botonConfirmar.type = "button";
+      const mensaje = el("span", { clase: "tenue" });
+      botonConfirmar.addEventListener("click", () => confirmarRevision(respuesta, campoPuntos, mensaje, botonConfirmar));
+
+      const cuerpo = el(
+        "li",
+        { clase: "fila-revision" },
+        el(
+          "div",
+          { clase: "encabezado-revision" },
+          el("span", { texto: `NIE ${respuesta.nie ?? ""}` }),
+          el("span", { texto: respuesta.tipo ?? "" }),
+        ),
+      );
+      if (respuesta.respuesta) cuerpo.append(el("p", { clase: "respuesta-revision", texto: String(respuesta.respuesta) }));
+      if (typeof respuesta.foto === "string" && respuesta.foto.startsWith("data:image/jpeg;base64,")) {
+        const imagen = el("img");
+        imagen.src = respuesta.foto;
+        imagen.alt = "Respuesta en pizarra";
+        cuerpo.append(imagen);
+      }
+      if (respuesta.calificacionIA) {
+        cuerpo.append(
+          el(
+            "div",
+            { clase: "sugerencia-ia" },
+            el("strong", { texto: `IA sugiere: ${respuesta.calificacionIA.puntos} pts — ` }),
+            el("span", { texto: respuesta.calificacionIA.justificacion ?? "" }),
+          ),
+        );
+      }
+      cuerpo.append(el("div", { clase: "controles-revision" }, el("span", { texto: "Puntos:" }), campoPuntos, botonConfirmar, mensaje));
+      return cuerpo;
+    }),
+  );
+}
+
+async function confirmarRevision(respuesta, campoPuntos, mensaje, boton) {
+  const { db, fs } = estado.n;
+  const puntos = Number(campoPuntos.value);
+  if (!Number.isFinite(puntos) || puntos < 0) {
+    mensaje.textContent = "Puntos inválidos.";
+    return;
+  }
+  boton.disabled = true;
+  try {
+    await fs.updateDoc(fs.doc(db, "sesiones", respuesta.sesionId, "respuestas", respuesta.itemId), {
+      calificacionFinal: puntos,
+      estado: "calificada",
+    });
+    // No hace falta repintar a mano: el onSnapshot de arriba ya deja de
+    // traer este documento apenas sale de "pendiente_revision".
+  } catch (error) {
+    console.error("[panel] no se pudo confirmar la calificación:", error);
+    mensaje.textContent = "No se pudo guardar.";
+    boton.disabled = false;
+  }
 }
 
 let claveVisible = false;
