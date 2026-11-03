@@ -41,6 +41,17 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
+  /* Sin esto, el ancho mínimo "de fábrica" de una celda de grid es el ancho
+     de su contenido (min-width: auto) -- un <select> con una opción larga
+     ("Respuesta completa (texto largo)") se niega a encogerse, empuja la
+     fila más ancha que el diálogo/la pantalla, y hay que desplazar de lado
+     para leer. min-width: 0 en los hijos deja que el grid los encoja de
+     verdad en pantallas angostas. */
+  min-width: 0;
+}
+
+.fila-campos > * {
+  min-width: 0;
 }
 
 .form-examen label,
@@ -58,6 +69,8 @@
 #form-item input,
 #form-item select,
 #form-item textarea {
+  width: 100%;
+  max-width: 100%;
   padding: 9px 10px;
   background: var(--superficie);
   border: 1px solid var(--borde);

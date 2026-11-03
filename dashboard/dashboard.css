@@ -45,6 +45,8 @@
 
 .campo-filtro select,
 .campo-filtro input {
+  width: 100%;
+  max-width: 100%;
   padding: 8px 10px;
   background: var(--superficie-alta);
   border: 1px solid var(--borde);

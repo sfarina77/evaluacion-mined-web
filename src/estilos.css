@@ -34,6 +34,9 @@ html,
 body {
   margin: 0;
   height: 100%;
+  /* Red de seguridad: un campo que se niegue a encogerse no debe poder
+     empujar la página entera y obligar a desplazar de lado a lado. */
+  overflow-x: hidden;
   background: var(--fondo-examen);
   color: var(--texto-principal);
   font-family:
@@ -43,6 +46,12 @@ body {
     Helvetica,
     Arial,
     sans-serif;
+}
+
+input,
+select,
+textarea {
+  max-width: 100%;
 }
 
 .pantalla {
