@@ -69,20 +69,45 @@ service cloud.firestore {
       allow read: if docenteDe(resource.data.examenId);
 
       match /eventos/{eventoId} {
+        // examenId y nie se duplican acá (ya están en la sesión padre) para
+        // que la consola de administración (docente/admin.js) pueda filtrar
+        // la galería de evidencia con una sola collectionGroup query, sin un
+        // get() por evento -- deben COINCIDIR con la sesión, nunca los inventa
+        // el cliente, para que nadie pueda "mover" un evento a otro examen.
         allow create: if autenticado()
           && get(/databases/$(database)/documents/sesiones/$(sesionId)).data.uid == request.auth.uid
-          && request.resource.data.keys().hasOnly(['tipo', 'detalle', 'cuenta', 't', 'foto', 'ts', 'expira'])
+          && request.resource.data.keys().hasOnly(
+               ['tipo', 'detalle', 'cuenta', 't', 'foto', 'ts', 'expira', 'examenId', 'nie'])
           && request.resource.data.tipo is string
           && request.resource.data.tipo.size() <= 40
           && request.resource.data.detalle is string
           && request.resource.data.detalle.size() <= 300
           && request.resource.data.ts == request.time
+          && request.resource.data.examenId
+               == get(/databases/$(database)/documents/sesiones/$(sesionId)).data.examenId
+          && request.resource.data.nie
+               == get(/databases/$(database)/documents/sesiones/$(sesionId)).data.nie
           && (request.resource.data.foto == null
               || (request.resource.data.foto is string
                   && request.resource.data.foto.size() < 150000
                   && request.resource.data.foto.matches('^data:image/jpeg;base64,.*')));
         allow read: if docenteDe(get(/databases/$(database)/documents/sesiones/$(sesionId)).data.examenId);
       }
+    }
+
+    // Consola de administración (docente/admin.js): collectionGroup query
+    // sobre TODAS las subcolecciones "eventos" para la galería/analítica
+    // multi-examen. Una regla anidada (la de arriba) NO alcanza para una
+    // collectionGroup query -- Firestore exige esta forma con {path=**} para
+    // autorizarlas (documentado así por Firebase). `path` captura el prefijo
+    // ("sesiones/{sesionId}") y $(path) lo reinyecta tal cual en el get(), sin
+    // indexarlo a mano. Esto NO amplía el acceso real: un admin ya podía leer
+    // cualquier evento uno por uno (docenteDe() da true para esAdmin() sin
+    // importar el examen); lo único nuevo es poder traerlos todos en una sola
+    // consulta. Un docente normal solo recibiría los de sus propios exámenes,
+    // igual que ya filtra la regla anidada documento por documento.
+    match /{path=**}/eventos/{eventoId} {
+      allow read: if docenteDe(get(/databases/$(database)/documents/$(path)).data.examenId);
     }
   }
 }

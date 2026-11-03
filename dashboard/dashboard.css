@@ -1,0 +1,179 @@
+/* Estilos propios de la consola de integridad (admin.html). Comparte
+   variables, botones, tabla, chips y diálogos con panel.css -- esto solo
+   agrega lo que el panel en vivo no necesita: filtros, pestañas, galería y
+   el ranking de situaciones. */
+
+.barra-derecha {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-panel {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ------------------------------------------------------------- filtros */
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 16px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+
+.campo-filtro {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.campo-filtro label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-secundario);
+}
+
+.campo-filtro select,
+.campo-filtro input {
+  padding: 8px 10px;
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  color: var(--texto);
+  font: inherit;
+}
+
+.aviso-ventana {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+/* ------------------------------------------------------------- pestañas */
+
+.pestanas {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--borde);
+  margin-bottom: 20px;
+}
+
+.pestana {
+  background: none;
+  border: none;
+  color: var(--texto-secundario);
+  font: inherit;
+  font-weight: 700;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.pestana[aria-selected="true"] {
+  color: var(--texto);
+  border-bottom-color: var(--acento);
+}
+
+.titulo-seccion {
+  font-size: 1rem;
+  margin: 24px 0 6px;
+}
+
+/* ------------------------------------------------------------- cifras */
+
+.cifras-globales {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 8px;
+}
+
+/* ------------------------------------------------------------- ranking */
+
+.ranking {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  max-width: 640px;
+}
+
+.ranking-fila {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.ranking-barra {
+  height: 8px;
+  background: var(--superficie-alta);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ranking-relleno {
+  height: 100%;
+  background: var(--acento);
+  border-radius: 999px;
+}
+
+/* ------------------------------------------------------------- galería */
+
+.galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.foto-tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  overflow: hidden;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  color: var(--texto);
+  font: inherit;
+}
+
+.foto-tarjeta img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+.foto-pie {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+}
+
+.foto-pie span:first-child {
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .admin-panel {
+    padding: 16px;
+  }
+  .filtros {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

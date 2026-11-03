@@ -107,7 +107,15 @@ export function crearReporteEnVivo({ examenId, nie }) {
     }, LATIDO_MS);
   }
 
-  /** Un hecho de la línea de tiempo. `t` en segundos desde el inicio. */
+  /** Un hecho de la línea de tiempo. `t` en segundos desde el inicio.
+   *
+   * `examenId`/`nie` se repiten en cada evento (ya están en la sesión padre)
+   * a propósito: la consola de administración (docente/admin.js) hace
+   * collectionGroup queries sobre "eventos" de TODAS las sesiones, y sin
+   * estos dos campos tendría que hacer un get() de la sesión por cada
+   * resultado solo para saber de qué examen/estudiante es -- caro e
+   * innecesario cuando ya se conocen al momento de escribir. Las reglas
+   * (firestore.rules) exigen que coincidan exactamente con la sesión. */
   function evento(tipo, { detalle = "", cuenta = false, t = null, conFoto = false } = {}) {
     if (!iniciada) return;
     // La foto se toma YA, no cuando la cola llegue a este evento.
@@ -121,6 +129,8 @@ export function crearReporteEnVivo({ examenId, nie }) {
         foto: imagen,
         ts: n.fs.serverTimestamp(),
         expira,
+        examenId,
+        nie,
       }),
     );
   }

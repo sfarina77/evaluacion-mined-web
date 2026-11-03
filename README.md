@@ -103,8 +103,54 @@ para esto (pendiente si hace falta una gestión más cómoda que la consola del 
 ## Qué NO incluye a propósito (mismo criterio que Windows y Android)
 
 - Verificación de identidad por rostro en el cliente (responsabilidad del backend).
-- Fotos de evidencia (decisión institucional del 29/07/2026, vigente en las tres plataformas).
-- Micrófono: no se pide el permiso en ningún momento.
+- Micrófono: no se pide el permiso en ningún momento (a diferencia de Windows/Android desde
+  2026-11-02, ver `docs/motor_alertas_spec.md`; sigue pendiente decidir si este cliente debe
+  alinearse).
+
+**Corrección (2026-11-02):** esta sección decía también "Fotos de evidencia (decisión
+institucional del 29/07/2026, vigente en las tres plataformas)" -- eso dejó de ser cierto el
+27/10/2026 (commit `dbb1888`/`9d8e8c1`): este cliente SÍ toma y guarda una foto pequeña por cada
+alerta/advertencia, subida a Firestore con 90 días de retención (`DIAS_RETENCION` en
+`src/nube/configNube.js`), visible para el docente/administrador. El texto de consentimiento en
+`index.html` ya lo refleja. Lo que quedó desactualizado era solo esta lista -- Windows y Android sí
+siguen sin guardar ninguna imagen, ahí la decisión del 29/07 sigue vigente.
+
+## Consola de integridad (`dashboard/`, evaluacionsv.com/dashboard)
+
+Vista de administración, aparte del panel en vivo (`docente/index.html`): mientras el panel muestra
+UN examen a la vez para su docente, esta consola cruza TODOS los exámenes para responder la
+pregunta de fondo ("¿es fácil copiarse? ¿qué tan seguido? ¿con qué evidencia?"):
+
+- **Galería de evidencia** filtrable por examen, tipo de alerta, NIE y rango de fechas.
+- **Ranking de situaciones**: qué tipo de alerta se dispara más seguido (de verdad, no advertencias
+  de salir del examen) -- la pregunta de dónde reforzar la vigilancia.
+- **Resumen por examen**: cuántos estudiantes, cuántos anulados, tasa de anulación.
+
+Solo para administradores (documento en `admins/{correo}` de Firestore) -- un docente normal sigue
+viendo únicamente el panel en vivo de sus propios exámenes asignados, igual que antes.
+
+**Antes de que esto funcione en producción** hay que desplegar dos cosas que no se autodespliegan
+solas (ver `firebase.json`/`nube/`):
+
+```bash
+cd apps/cliente-web
+firebase deploy --only firestore:rules,firestore:indexes --project evaluacionsv
+```
+
+- `nube/firestore.rules` cambió: cada evento ahora guarda su propio `examenId`/`nie` (antes solo
+  vivían en la sesión padre) para que la consola pueda filtrar con una sola consulta en vez de un
+  `get()` por evento, y se agregó la regla `match /{path=**}/eventos/{eventoId}` que exige Firestore
+  para permitir una collectionGroup query (sin ella, la consola no puede leer across-sesiones). No
+  amplía quién puede ver qué: un admin ya podía leer cualquier evento antes, uno por uno.
+- `nube/firestore.indexes.json` existe pero hoy está vacío: las consultas de la consola usan rango
+  simple en un solo campo (`inicio`/`ts`) con el mismo campo en `orderBy`, que Firestore indexa
+  automáticamente. Si el navegador muestra un error con un enlace para crear un índice (pasa si se
+  amplían los filtros más adelante), ese enlace ya hace el trabajo -- después conviene exportar ese
+  índice nuevo a este archivo para que quede versionado, no solo en la consola de Firebase.
+- Los eventos escritos ANTES de este cambio no tienen `examenId`/`nie` propios, así que no van a
+  aparecer en los filtros de la consola (sí van a seguir viéndose en el panel en vivo de siempre,
+  que no depende de esos campos). Es un costo aceptado, no un bug: no tiene sentido reescribir
+  eventos viejos solo para esto.
 
 ## Pendiente, no bloqueante
 

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es-SV">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Consola de integridad — Evaluación MINED</title>
+<link rel="stylesheet" href="../docente/panel.css" />
+<link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+
+  <header class="barra">
+    <div class="marca">Evaluación MINED <span>· Consola de integridad</span></div>
+    <div class="barra-derecha">
+      <a href="../docente/" class="boton-texto">Panel en vivo</a>
+      <div id="usuario" class="usuario" hidden>
+        <span id="correo-usuario"></span>
+        <button id="boton-salir" type="button" class="boton-texto">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Entrada: mismo mecanismo que el panel en vivo, pero esta vista exige
+       además ser admin (ver dashboard.js) -- no es una página nueva de login,
+       es el mismo guard reforzado. -->
+  <main id="vista-entrada" class="centrado" hidden>
+    <div class="tarjeta tarjeta-entrada">
+      <h1>Consola de integridad</h1>
+      <p>Entra con tu cuenta institucional para ver la evidencia y el análisis de todos los exámenes.</p>
+      <button id="boton-google" type="button" class="boton boton-primario">Entrar con Google</button>
+      <p id="mensaje-entrada" class="mensaje-error" hidden></p>
+    </div>
+  </main>
+
+  <main id="vista-sin-config" class="centrado" hidden>
+    <div class="tarjeta tarjeta-entrada">
+      <h1>Consola no disponible</h1>
+      <p>Todavía no está conectada a su base de datos.</p>
+    </div>
+  </main>
+
+  <main id="vista-sin-permiso" class="centrado" hidden>
+    <div class="tarjeta tarjeta-entrada">
+      <h1>Acceso restringido</h1>
+      <p>Esta consola es solo para administradores. <span id="correo-sin-permiso"></span> tiene el panel en vivo de sus propios exámenes, no esta vista.</p>
+      <a href="../docente/" class="boton boton-secundario">Ir al panel en vivo</a>
+    </div>
+  </main>
+
+  <!-- Consola -->
+  <main id="vista-admin" class="admin-panel" hidden>
+
+    <section class="filtros">
+      <div class="campo-filtro">
+        <label for="filtro-examen">Examen</label>
+        <select id="filtro-examen"><option value="">Todos</option></select>
+      </div>
+      <div class="campo-filtro">
+        <label for="filtro-situacion">Tipo de alerta</label>
+        <select id="filtro-situacion"><option value="">Todas</option></select>
+      </div>
+      <div class="campo-filtro">
+        <label for="filtro-nie">NIE</label>
+        <input id="filtro-nie" type="text" placeholder="Buscar por NIE" />
+      </div>
+      <div class="campo-filtro">
+        <label for="filtro-desde">Desde</label>
+        <input id="filtro-desde" type="date" />
+      </div>
+      <div class="campo-filtro">
+        <label for="filtro-hasta">Hasta</label>
+        <input id="filtro-hasta" type="date" />
+      </div>
+      <button id="boton-refrescar" type="button" class="boton boton-secundario">Actualizar</button>
+      <p id="aviso-ventana" class="tenue aviso-ventana"></p>
+    </section>
+
+    <p id="mensaje-carga" class="tenue" hidden>Cargando evidencia…</p>
+    <p id="mensaje-error-carga" class="mensaje-error" hidden></p>
+
+    <nav class="pestanas" role="tablist">
+      <button type="button" class="pestana" data-vista="resumen" aria-selected="true">Resumen</button>
+      <button type="button" class="pestana" data-vista="galeria" aria-selected="false">Galería de evidencia</button>
+      <button type="button" class="pestana" data-vista="examenes" aria-selected="false">Por examen</button>
+    </nav>
+
+    <!-- Resumen / análisis -->
+    <section id="seccion-resumen" class="seccion-vista">
+      <div id="cifras-globales" class="cifras-globales"></div>
+
+      <h2 class="titulo-seccion">Qué forma de copiarse es más frecuente</h2>
+      <p class="tenue">Cuenta solo las alertas que de verdad sumaron al contador (no advertencias de salir del examen). Es la pregunta central: dónde conviene reforzar la vigilancia.</p>
+      <ol id="ranking-situaciones" class="ranking"></ol>
+      <p id="sin-alertas" class="tenue" hidden>No hay alertas con los filtros actuales.</p>
+    </section>
+
+    <!-- Galería -->
+    <section id="seccion-galeria" class="seccion-vista" hidden>
+      <p class="tenue">Fotos de evidencia de los eventos que calzan con los filtros de arriba. Haz clic en una para ver la sesión completa.</p>
+      <div id="galeria" class="galeria"></div>
+      <p id="sin-fotos" class="tenue" hidden>No hay fotos con los filtros actuales.</p>
+    </section>
+
+    <!-- Por examen -->
+    <section id="seccion-examenes" class="seccion-vista" hidden>
+      <div class="tabla-envoltura">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Examen</th>
+              <th>Estudiantes</th>
+              <th>Anulados</th>
+              <th>Terminados</th>
+              <th>En curso</th>
+              <th>Tasa de anulación</th>
+            </tr>
+          </thead>
+          <tbody id="filas-examenes"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Línea de tiempo de la sesión de una foto de la galería (misma idea que el panel en vivo) -->
+  <dialog id="dialogo-sesion" class="dialogo-sesion">
+    <div class="dialogo-encabezado">
+      <div>
+        <h2 id="titulo-sesion"></h2>
+        <p id="subtitulo-sesion" class="tenue"></p>
+      </div>
+      <button id="boton-cerrar-sesion" type="button" class="boton-texto">Cerrar</button>
+    </div>
+    <ol id="linea-tiempo" class="linea-tiempo"></ol>
+  </dialog>
+
+  <dialog id="dialogo-foto" class="dialogo-foto">
+    <img id="foto-grande" alt="Foto de evidencia" />
+  </dialog>
+
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>
