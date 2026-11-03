@@ -208,6 +208,9 @@ function configurarFormularioExamen() {
       pin_salida: $("campo-pin").value.trim() || "0000",
       clave_reingreso: $("campo-clave").value.trim() || "1111",
       advertencias_evasion: Number($("campo-advertencias").value) || 5,
+      // Para la bitácora (functions/bitacora.js): quién hizo este cambio.
+      // nube/firestore.rules exige que coincida con el correo de quien firma.
+      actualizadoPor: estado.correo,
     };
 
     try {
@@ -440,7 +443,7 @@ async function guardarItem() {
     ? estado.items.find((i) => i.id === itemId)?.orden ?? estado.items.length
     : estado.items.length;
 
-  const datosItem = { orden, tipo, enunciado, puntos };
+  const datosItem = { orden, tipo, enunciado, puntos, actualizadoPor: estado.correo };
   if (medio) datosItem.medio = medio;
   if (opciones) datosItem.opciones = opciones;
 

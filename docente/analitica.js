@@ -5,7 +5,7 @@
  * navegador, mismo criterio que etiquetas.js (ver test/analitica.test.js).
  */
 
-import { SITUACIONES } from "./etiquetas.js";
+import { SITUACIONES, describirEvento } from "./etiquetas.js";
 
 /** Un evento "de alerta" sin su situación reconocida todavía cuenta -- se
  * muestra con su propio detalle en vez de perderse como "undefined". */
@@ -90,6 +90,64 @@ export function resumirPorExamen(sesiones) {
   return [...porExamen.entries()]
     .map(([examenId, lista]) => ({ examenId, ...resumirSesiones(lista) }))
     .sort((a, b) => b.total - a.total);
+}
+
+/**
+ * Bitácora completa (2026-11-03): combina en una sola lista cronológica las
+ * acciones de docentes (colección `bitacora`, ver functions/bitacora.js),
+ * los eventos de sesión del estudiante (ya traídos para la galería/resumen
+ * de arriba) y los errores técnicos de las Cloud Functions (colección
+ * `bitacora_errores`) -- la consola de administración los pinta juntos, más
+ * fácil de auditar que tres listas sueltas.
+ */
+const TITULOS_ACCION_DOCENTE = {
+  examen: "examen",
+  pregunta: "pregunta",
+  contenido: "contenido",
+  calificacion: "calificación",
+};
+
+function normalizarAccionDocente(entrada) {
+  const tipoLegible = TITULOS_ACCION_DOCENTE[entrada.tipo] ?? entrada.tipo ?? "";
+  return {
+    tsMs: entrada.ts?.toMillis?.() ?? null,
+    tipo: "docente",
+    origen: entrada.actor ?? "—",
+    examenId: entrada.examenId ?? null,
+    detalle: `${entrada.accion ?? ""} ${tipoLegible}: ${entrada.detalle ?? ""}`.trim(),
+  };
+}
+
+function normalizarEventoSesion(evento) {
+  const { titulo, detalle } = describirEvento(evento);
+  return {
+    tsMs: evento.tsMs ?? null,
+    tipo: "sesion",
+    origen: evento.nie ? `NIE ${evento.nie}` : "—",
+    examenId: evento.examenId ?? null,
+    detalle: detalle ? `${titulo} — ${detalle}` : titulo,
+  };
+}
+
+function normalizarErrorSistema(entrada) {
+  return {
+    tsMs: entrada.ts?.toMillis?.() ?? null,
+    tipo: "sistema",
+    origen: entrada.funcion ?? "—",
+    examenId: entrada.examenId ?? entrada.contexto?.examenId ?? null,
+    detalle: entrada.mensaje ?? "",
+  };
+}
+
+/** `filtroTipo` es "docente"/"sesion"/"sistema" o vacío/undefined para todo. */
+export function combinarBitacora({ accionesDocentes = [], eventosSesion = [], erroresSistema = [], filtroTipo } = {}) {
+  const filas = [
+    ...accionesDocentes.map(normalizarAccionDocente),
+    ...eventosSesion.map(normalizarEventoSesion),
+    ...erroresSistema.map(normalizarErrorSistema),
+  ];
+  const filtradas = filtroTipo ? filas.filter((fila) => fila.tipo === filtroTipo) : filas;
+  return filtradas.sort((a, b) => (b.tsMs ?? 0) - (a.tsMs ?? 0));
 }
 
 export { tituloSituacion };

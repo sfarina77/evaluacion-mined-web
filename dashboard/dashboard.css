@@ -170,6 +170,17 @@
   font-weight: 700;
 }
 
+/* ------------------------------------------------------------- bitácora */
+
+.bitacora-controles {
+  display: flex;
+  margin-bottom: 14px;
+}
+
+.docente { --color: var(--acento); }
+.sesion { --color: var(--neutro); }
+.sistema { --color: var(--grave); }
+
 @media (max-width: 720px) {
   .admin-panel {
     padding: 16px;

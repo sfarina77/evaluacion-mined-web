@@ -273,6 +273,9 @@ async function confirmarRevision(respuesta, campoPuntos, mensaje, boton) {
     await fs.updateDoc(fs.doc(db, "sesiones", respuesta.sesionId, "respuestas", respuesta.itemId), {
       calificacionFinal: puntos,
       estado: "calificada",
+      // Para la bitácora (functions/bitacora.js) -- nube/firestore.rules
+      // exige que coincida con el correo de quien firma.
+      revisadoPor: estado.correo,
     });
     // No hace falta repintar a mano: el onSnapshot de arriba ya deja de
     // traer este documento apenas sale de "pendiente_revision".

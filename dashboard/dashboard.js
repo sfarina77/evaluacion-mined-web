@@ -1,7 +1,7 @@
 import { nube, nubeConfigurada } from "../src/nube/nube.js";
 import { obtener as obtenerExamenes } from "../src/login/examenConfig.js";
 import { describirEvento, SITUACIONES } from "../docente/etiquetas.js";
-import { filtrarEventos, soloConFoto, contarPorSituacion, resumirPorExamen } from "../docente/analitica.js";
+import { filtrarEventos, soloConFoto, contarPorSituacion, resumirPorExamen, combinarBitacora } from "../docente/analitica.js";
 
 /**
  * Consola de integridad (evaluacionsv.com/docente/admin.html): galería de
@@ -30,6 +30,8 @@ const estado = {
   infoExamenes: {},
   sesiones: [],
   eventos: [], // de la ventana de fechas actual, con _sesionId y tsMs ya resueltos
+  bitacora: [], // acciones de docentes (colección bitacora), ventana de fechas actual
+  bitacoraErrores: [], // errores técnicos (colección bitacora_errores), misma ventana
   vista: "resumen",
 };
 
@@ -153,6 +155,7 @@ function configurarFiltros() {
   for (const id of ["filtro-examen", "filtro-situacion", "filtro-nie"]) {
     $(id).addEventListener("input", pintarTodo);
   }
+  $("filtro-bitacora-tipo").addEventListener("input", pintarTodo);
 }
 
 function filtrosActuales() {
@@ -214,10 +217,30 @@ async function cargar() {
       fs.orderBy("ts", "desc"),
       fs.limit(TOPE_LECTURA),
     );
+    // Bitácora (2026-11-03): mismo criterio de ventana simple en un campo
+    // (ts) que arriba, sin índice compuesto. `bitacora`/`bitacora_errores`
+    // los escribe solo el Admin SDK (ver nube/firestore.rules) -- acá solo
+    // se leen, filtradas y combinadas por docente/analitica.js.
+    const consultaBitacora = fs.query(
+      fs.collection(db, "bitacora"),
+      ...(desdeFecha ? [fs.where("ts", ">=", desdeFecha)] : []),
+      ...(hastaFecha ? [fs.where("ts", "<=", hastaFecha)] : []),
+      fs.orderBy("ts", "desc"),
+      fs.limit(TOPE_LECTURA),
+    );
+    const consultaErrores = fs.query(
+      fs.collection(db, "bitacora_errores"),
+      ...(desdeFecha ? [fs.where("ts", ">=", desdeFecha)] : []),
+      ...(hastaFecha ? [fs.where("ts", "<=", hastaFecha)] : []),
+      fs.orderBy("ts", "desc"),
+      fs.limit(TOPE_LECTURA),
+    );
 
-    const [fotoSesiones, fotoEventos] = await Promise.all([
+    const [fotoSesiones, fotoEventos, fotoBitacora, fotoErrores] = await Promise.all([
       fs.getDocs(consultaSesiones),
       fs.getDocs(consultaEventos),
+      fs.getDocs(consultaBitacora),
+      fs.getDocs(consultaErrores),
     ]);
 
     estado.sesiones = fotoSesiones.docs.map((d) => ({ id: d.id, ...d.data({ serverTimestamps: "estimate" }) }));
@@ -225,6 +248,8 @@ async function cargar() {
       const datos = d.data({ serverTimestamps: "estimate" });
       return { ...datos, _sesionId: d.ref.parent.parent.id, tsMs: datos.ts?.toMillis?.() ?? null };
     });
+    estado.bitacora = fotoBitacora.docs.map((d) => d.data({ serverTimestamps: "estimate" }));
+    estado.bitacoraErrores = fotoErrores.docs.map((d) => d.data({ serverTimestamps: "estimate" }));
 
     pintarTodo();
   } catch (error) {
@@ -258,6 +283,7 @@ function pintarTodo() {
   pintarResumen();
   pintarGaleria();
   pintarPorExamen();
+  pintarBitacora();
 }
 
 function pintarResumen() {
@@ -334,6 +360,38 @@ function pintarPorExamen() {
         el("td", { texto: String(fila.terminado) }),
         el("td", { texto: String(fila.en_curso) }),
         el("td", { texto: `${Math.round(fila.tasaAnulacion * 100)}%` }),
+      ),
+    ),
+  );
+}
+
+// ----------------------------------------------------------------- bitácora
+
+const TITULOS_TIPO_BITACORA = { docente: "Docente", sesion: "Sesión", sistema: "Sistema" };
+
+function pintarBitacora() {
+  // examenId/nie de los filtros de arriba aplican igual acá -- eventosFiltrados()
+  // ya los respeta; bitacora/bitacoraErrores no traen nie (no son por
+  // estudiante), solo se acotan por examen cuando corresponde.
+  const { examenId } = filtrosActuales();
+  const porExamen = (lista) => (examenId ? lista.filter((e) => e.examenId === examenId) : lista);
+  const filas = combinarBitacora({
+    accionesDocentes: porExamen(estado.bitacora),
+    eventosSesion: eventosFiltrados(),
+    erroresSistema: porExamen(estado.bitacoraErrores),
+    filtroTipo: $("filtro-bitacora-tipo").value || undefined,
+  });
+  $("sin-bitacora").hidden = filas.length > 0;
+  $("filas-bitacora").replaceChildren(
+    ...filas.slice(0, 500).map((fila) =>
+      el(
+        "tr",
+        {},
+        el("td", { texto: fila.tsMs ? new Date(fila.tsMs).toLocaleString("es-SV") : "—" }),
+        el("td", {}, el("span", { clase: `chip ${fila.tipo}`, texto: TITULOS_TIPO_BITACORA[fila.tipo] ?? fila.tipo })),
+        el("td", { texto: fila.origen }),
+        el("td", { texto: fila.examenId ?? "—" }),
+        el("td", { texto: fila.detalle }),
       ),
     ),
   );

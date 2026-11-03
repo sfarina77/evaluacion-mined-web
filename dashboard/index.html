@@ -83,6 +83,7 @@
       <button type="button" class="pestana" data-vista="resumen" aria-selected="true">Resumen</button>
       <button type="button" class="pestana" data-vista="galeria" aria-selected="false">Galería de evidencia</button>
       <button type="button" class="pestana" data-vista="examenes" aria-selected="false">Por examen</button>
+      <button type="button" class="pestana" data-vista="bitacora" aria-selected="false">Bitácora</button>
     </nav>
 
     <!-- Resumen / análisis -->
@@ -119,6 +120,40 @@
           <tbody id="filas-examenes"></tbody>
         </table>
       </div>
+    </section>
+
+    <!-- Bitácora completa (2026-11-03): acciones de docentes (crear/editar/
+         borrar examen, pregunta o contenido; confirmar una calificación),
+         eventos de sesión del estudiante y errores técnicos de las Cloud
+         Functions, todo junto en orden cronológico -- ver
+         docente/analitica.js (combinarBitacora) y functions/bitacora.js. -->
+    <section id="seccion-bitacora" class="seccion-vista" hidden>
+      <div class="bitacora-controles">
+        <div class="campo-filtro">
+          <label for="filtro-bitacora-tipo">Tipo</label>
+          <select id="filtro-bitacora-tipo">
+            <option value="">Todo</option>
+            <option value="docente">Acciones de docentes</option>
+            <option value="sesion">Eventos de sesión</option>
+            <option value="sistema">Errores del sistema</option>
+          </select>
+        </div>
+      </div>
+      <div class="tabla-envoltura">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Fecha y hora</th>
+              <th>Tipo</th>
+              <th>Quién / origen</th>
+              <th>Examen</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody id="filas-bitacora"></tbody>
+        </table>
+      </div>
+      <p id="sin-bitacora" class="tenue" hidden>No hay entradas con los filtros actuales.</p>
     </section>
   </main>
 
