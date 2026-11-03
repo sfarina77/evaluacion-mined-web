@@ -4,8 +4,8 @@
   "start_url": "../index.html",
   "display": "fullscreen",
   "orientation": "landscape",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#f4f7fd",
+  "theme_color": "#3b6df0",
   "icons": [
     {
       "src": "icons/icono-192.png",

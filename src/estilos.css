@@ -1,16 +1,22 @@
-/* Mismo esquema visual que los clientes Windows y Android (ver
-   captura-1-login.png del paquete Windows v1.0.6.0): fondo azul marino
-   oscuro, acento azul. */
+/* Rediseño claro y amigable (2026-11-03, indicación directa: "más bonitas y
+   simpáticas, como para un colegio, no tan serio") -- antes era fondo azul
+   marino oscuro igual que Windows/Android; ver docs/git para el esquema
+   viejo si hiciera falta volver. --texto-sobre-acento es nuevo: antes
+   `.boton` reusaba --texto-principal para el texto de CUALQUIER botón, y
+   sobre un fondo claro eso deja el botón primario (fondo azul) con texto
+   oscuro casi invisible -- necesita su propia variable, fija en blanco,
+   sin importar el tema. */
 :root {
-  --fondo-examen: #0f172a;
-  --superficie-campo: #16213a;
-  --borde-campo: #3b5bdb;
-  --texto-principal: #ffffff;
-  --texto-secundario: #a6b0c3;
+  --fondo-examen: #f4f7fd;
+  --superficie-campo: #ffffff;
+  --borde-campo: #cbd8f3;
+  --texto-principal: #1f2a44;
+  --texto-secundario: #5b6b8c;
   --acento-primario: #3b6df0;
-  --boton-secundario: #3a4459;
-  --alerta-aviso: #f5a524;
-  --alerta-grave: #e5484d;
+  --texto-sobre-acento: #ffffff;
+  --boton-secundario: #e8edfa;
+  --alerta-aviso: #d97706;
+  --alerta-grave: #dc2626;
 }
 
 * {
@@ -122,7 +128,7 @@ input::placeholder {
   flex: 1;
   height: 44px;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   font-weight: 700;
   color: var(--texto-principal);
   cursor: pointer;
@@ -130,10 +136,12 @@ input::placeholder {
 
 .boton-primario {
   background: var(--acento-primario);
+  color: var(--texto-sobre-acento);
 }
 
 .boton-secundario {
   background: var(--boton-secundario);
+  color: var(--texto-principal);
 }
 
 /* --------------------------------------------------------------- examen */
@@ -233,7 +241,10 @@ input::placeholder {
   left: 0;
   right: 0;
   background: var(--alerta-aviso);
-  color: var(--fondo-examen);
+  /* Blanco fijo, no var(--texto-principal): el banner es naranja sin
+     importar el tema, así que su texto siempre es blanco, no "lo opuesto al
+     fondo general" (que es lo que hacía reusar --fondo-examen de prestado). */
+  color: #ffffff;
   font-weight: 700;
   padding: 12px;
   text-align: center;
@@ -242,7 +253,12 @@ input::placeholder {
 .overlay-bloqueo {
   position: absolute;
   inset: 0;
+  /* Sigue oscuro a propósito (es un velo de bloqueo, no una pantalla
+     "amigable" más): si el fondo claro se viera a través, no se leería
+     como "el examen está pausado". El texto adentro es blanco fijo por lo
+     mismo -- no hereda --texto-principal, que ahora es oscuro. */
   background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;

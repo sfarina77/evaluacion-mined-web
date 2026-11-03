@@ -1,18 +1,22 @@
-/* Mismo esquema que el cliente del estudiante (src/estilos.css). */
+/* Rediseño claro y amigable (2026-11-03), mismo esquema que src/estilos.css
+   -- antes fondo azul marino oscuro. --texto-sobre-acento es nuevo: ver el
+   comentario en estilos.css sobre por qué un botón primario necesita su
+   propio color de texto fijo en vez de heredar --texto. */
 :root {
-  --fondo: #0f172a;
-  --superficie: #16213a;
-  --superficie-alta: #1d2a47;
-  --borde: #2a3a5e;
-  --borde-acento: #3b5bdb;
-  --texto: #ffffff;
-  --texto-secundario: #a6b0c3;
+  --fondo: #f4f7fd;
+  --superficie: #ffffff;
+  --superficie-alta: #eef2fb;
+  --borde: #dde5f5;
+  --borde-acento: #3b6df0;
+  --texto: #1f2a44;
+  --texto-secundario: #5b6b8c;
   --acento: #3b6df0;
-  --boton-secundario: #3a4459;
-  --ok: #30a46c;
-  --aviso: #f5a524;
-  --grave: #e5484d;
-  --neutro: #6b7a99;
+  --texto-sobre-acento: #ffffff;
+  --boton-secundario: #e8edfa;
+  --ok: #16a34a;
+  --aviso: #d97706;
+  --grave: #dc2626;
+  --neutro: #94a3b8;
 }
 
 * {
@@ -87,7 +91,7 @@ h2 {
   height: 42px;
   padding: 0 18px;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   font-weight: 700;
   color: var(--texto);
   cursor: pointer;
@@ -95,10 +99,12 @@ h2 {
 
 .boton-primario {
   background: var(--acento);
+  color: var(--texto-sobre-acento);
 }
 
 .boton-secundario {
   background: var(--boton-secundario);
+  color: var(--texto);
 }
 
 .boton-texto {
@@ -127,8 +133,9 @@ h2 {
 .tarjeta {
   background: var(--superficie);
   border: 1px solid var(--borde);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 28px;
+  box-shadow: 0 2px 10px rgba(31, 42, 68, 0.06);
 }
 
 .tarjeta-entrada {
@@ -297,9 +304,10 @@ textarea {
 .cifra {
   background: var(--superficie);
   border: 1px solid var(--borde);
-  border-radius: 10px;
+  border-radius: 14px;
   padding: 10px 16px;
   min-width: 110px;
+  box-shadow: 0 1px 4px rgba(31, 42, 68, 0.05);
 }
 
 .cifra strong {
@@ -376,10 +384,11 @@ textarea {
 .fila-revision {
   background: var(--superficie);
   border: 1px solid var(--borde);
-  border-radius: 10px;
+  border-radius: 14px;
   padding: 14px 16px;
   display: grid;
   gap: 8px;
+  box-shadow: 0 1px 4px rgba(31, 42, 68, 0.05);
 }
 
 .fila-revision .encabezado-revision {
