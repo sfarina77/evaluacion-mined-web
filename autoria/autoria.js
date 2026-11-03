@@ -1,6 +1,7 @@
 import { nube, nubeConfigurada } from "../src/nube/nube.js";
 import { colorDeMateria, agruparPorMateria } from "../src/colorMateria.js";
 import { tipoMedioDesdeMime } from "../src/examen/medios.js";
+import { calcularRestantes, crearIlustracionSvg } from "../src/examen/ilustraciones.js";
 
 /**
  * Autoría de exámenes (evaluacionsv.com/autoria): un docente crea un examen
@@ -47,6 +48,7 @@ const TITULOS_TIPO = {
   interpretacion: "Interpretación",
   respuesta_completa: "Respuesta completa",
   pizarra: "Pizarra",
+  problema_ilustrado: "Problema ilustrado",
 };
 
 // ------------------------------------------------------------------ entrada
@@ -176,6 +178,7 @@ function seleccionar(codigo) {
   $("campo-pin").value = datos.pin_salida ?? "";
   $("campo-clave").value = datos.clave_reingreso ?? "";
   $("campo-advertencias").value = datos.advertencias_evasion ?? "";
+  $("campo-tamano-texto").value = datos.tamano_texto ?? "normal";
   pintarExamenes();
 
   estado.desuscribirItems?.();
@@ -211,6 +214,7 @@ function configurarFormularioExamen() {
       pin_salida: $("campo-pin").value.trim() || "0000",
       clave_reingreso: $("campo-clave").value.trim() || "1111",
       advertencias_evasion: Number($("campo-advertencias").value) || 5,
+      tamano_texto: $("campo-tamano-texto").value || "normal",
       // Para la bitácora (functions/bitacora.js): quién hizo este cambio.
       // nube/firestore.rules exige que coincida con el correo de quien firma.
       actualizadoPor: estado.correo,
@@ -352,6 +356,9 @@ function configurarItems() {
   $("item-tipo").addEventListener("change", actualizarCamposSegunTipo);
   $("item-medio-archivo").addEventListener("change", subirMedioArchivo);
   $("filtro-materia-items").addEventListener("change", pintarItems);
+  for (const id of ["item-ilustracion-objeto", "item-ilustracion-inicial", "item-ilustracion-quitar"]) {
+    $(id).addEventListener("input", actualizarVistaPreviaIlustracion);
+  }
 
   $("boton-cancelar-item").addEventListener("click", () => $("dialogo-item").close());
 
@@ -515,6 +522,24 @@ function actualizarCamposSegunTipo() {
   const tipo = $("item-tipo").value;
   $("campo-opciones").hidden = tipo !== "seleccion_simple" && tipo !== "seleccion_multiple";
   $("campo-rubrica").hidden = tipo !== "interpretacion" && tipo !== "respuesta_completa";
+  const esIlustrado = tipo === "problema_ilustrado";
+  $("campo-ilustracion").hidden = !esIlustrado;
+  // El medio genérico (imagen/video/audio/documento) no aplica acá -- la
+  // ilustración generada ES el medio de esta pregunta.
+  $("campo-medio-generico").hidden = esIlustrado;
+  if (esIlustrado) actualizarVistaPreviaIlustracion();
+}
+
+/** Redibuja la vista previa de la ilustración y la respuesta sugerida cada
+ * vez que el docente cambia el dibujo o las cantidades -- mismo cálculo
+ * (calcularRestantes) que usará la calificación automática, para que el
+ * docente vea EXACTAMENTE qué va a contar como correcto. */
+function actualizarVistaPreviaIlustracion() {
+  const objeto = $("item-ilustracion-objeto").value;
+  const cantidadInicial = Number($("item-ilustracion-inicial").value) || 0;
+  const cantidadQuitar = Number($("item-ilustracion-quitar").value) || 0;
+  $("vista-previa-ilustracion").replaceChildren(crearIlustracionSvg({ objeto, cantidadInicial, cantidadQuitar }));
+  $("texto-respuesta-ilustracion").textContent = String(calcularRestantes(cantidadInicial, cantidadQuitar));
 }
 
 /**
@@ -534,11 +559,15 @@ async function abrirDialogoItem(item, borrador) {
   if (item) {
     $("item-tipo").value = item.tipo;
     $("item-materia").value = item.materia ?? "";
+    $("item-herramienta").value = item.herramienta ?? "";
     $("item-enunciado").value = item.enunciado ?? "";
     $("item-medio-tipo").value = item.medio?.tipo ?? "";
     $("item-medio-url").value = item.medio?.url ?? "";
     $("item-opciones").value = (item.opciones ?? []).join("\n");
     $("item-puntos").value = item.puntos ?? 10;
+    $("item-ilustracion-objeto").value = item.ilustracion?.objeto ?? "pato";
+    $("item-ilustracion-inicial").value = item.ilustracion?.cantidadInicial ?? 10;
+    $("item-ilustracion-quitar").value = item.ilustracion?.cantidadQuitar ?? 0;
 
     // La clave (respuesta correcta/rúbrica) vive aparte -- se pide solo al
     // abrir el editor, nunca viaja con la lista de preguntas (ver
@@ -594,6 +623,14 @@ async function guardarItem() {
   const opciones = esSeleccion
     ? $("item-opciones").value.split("\n").map((linea) => linea.trim()).filter(Boolean)
     : null;
+  const esIlustrado = tipo === "problema_ilustrado";
+  const ilustracion = esIlustrado
+    ? {
+        objeto: $("item-ilustracion-objeto").value,
+        cantidadInicial: Number($("item-ilustracion-inicial").value) || 0,
+        cantidadQuitar: Number($("item-ilustracion-quitar").value) || 0,
+      }
+    : null;
 
   const itemId = estado.editandoItemId ?? crypto.randomUUID();
   const orden = estado.editandoItemId
@@ -601,10 +638,13 @@ async function guardarItem() {
     : estado.items.length;
 
   const materia = $("item-materia").value.trim();
+  const herramienta = $("item-herramienta").value;
   const datosItem = { orden, tipo, enunciado, puntos, actualizadoPor: estado.correo };
   if (medio) datosItem.medio = medio;
   if (opciones) datosItem.opciones = opciones;
   if (materia) datosItem.materia = materia;
+  if (herramienta) datosItem.herramienta = herramienta;
+  if (ilustracion) datosItem.ilustracion = ilustracion;
 
   try {
     await fs.setDoc(fs.doc(db, "examenes", estado.seleccionado, "items", itemId), datosItem);
@@ -616,6 +656,12 @@ async function guardarItem() {
     } else if (tipo === "interpretacion" || tipo === "respuesta_completa") {
       const rubrica = $("item-rubrica").value.trim();
       await fs.setDoc(fs.doc(db, "examenes", estado.seleccionado, "claves", itemId), { rubrica });
+    } else if (esIlustrado) {
+      // Misma cuenta que ya se le mostró al docente en la vista previa
+      // (cuántos hay menos cuántos se quitan) -- siempre una resta directa,
+      // no hay forma de escribir otra cosa a mano en esta primera versión.
+      const respuestaCorrecta = calcularRestantes(ilustracion.cantidadInicial, ilustracion.cantidadQuitar);
+      await fs.setDoc(fs.doc(db, "examenes", estado.seleccionado, "claves", itemId), { respuestaCorrecta });
     }
     // pizarra: no hace falta ninguna clave, se revisa a mano.
 

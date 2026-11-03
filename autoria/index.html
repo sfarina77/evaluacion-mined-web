@@ -104,6 +104,12 @@
             <label>Advertencias antes de bloquear
               <input id="campo-advertencias" type="number" min="1" max="20" placeholder="5" />
             </label>
+            <label>Tamaño de texto e imágenes
+              <select id="campo-tamano-texto">
+                <option value="normal">Normal</option>
+                <option value="grande">Grande (para primero/segundo grado)</option>
+              </select>
+            </label>
           </div>
           <p class="tenue">El estudiante solo necesita este código y su NIE/DUI para entrar -- colegio, grado,
             sección y docentes quedan configurados acá, una sola vez.</p>
@@ -223,6 +229,7 @@
           <option value="interpretacion">Interpretación (texto corto)</option>
           <option value="respuesta_completa">Respuesta completa (texto largo)</option>
           <option value="pizarra">Pizarra (dibujo o escritura a mano)</option>
+          <option value="problema_ilustrado">Problema ilustrado (contar con dibujos, estilo juego)</option>
         </select>
       </label>
 
@@ -230,11 +237,43 @@
         <input id="item-materia" type="text" placeholder="Ej: Matemática" maxlength="60" />
       </label>
 
+      <label>Herramienta de apoyo durante esta pregunta
+        <select id="item-herramienta">
+          <option value="">Ninguna (solo lápiz/teclado, sin apoyo)</option>
+          <option value="calculadora_basica">Calculadora básica</option>
+          <option value="calculadora_cientifica">Calculadora científica</option>
+          <option value="calculadora_grafica">Calculadora gráfica</option>
+        </select>
+      </label>
+
       <label>Enunciado
         <textarea id="item-enunciado" rows="3" required></textarea>
       </label>
 
-      <fieldset class="campo-medio">
+      <fieldset id="campo-ilustracion" class="campo-medio" hidden>
+        <legend>Problema ilustrado</legend>
+        <div class="fila-campos">
+          <label>Dibujo
+            <select id="item-ilustracion-objeto">
+              <option value="pato">Patos</option>
+              <option value="bolo">Bolos</option>
+              <option value="manzana">Manzanas</option>
+              <option value="estrella">Estrellas</option>
+              <option value="globo">Globos</option>
+            </select>
+          </label>
+          <label>Cuántos hay
+            <input id="item-ilustracion-inicial" type="number" min="1" max="30" value="10" />
+          </label>
+          <label>Cuántos se quitan/vuelan (0 si ninguno)
+            <input id="item-ilustracion-quitar" type="number" min="0" max="30" value="0" />
+          </label>
+        </div>
+        <div id="vista-previa-ilustracion" class="vista-previa-ilustracion"></div>
+        <p class="tenue">Respuesta correcta (se calcula sola: cuántos hay menos cuántos se quitan): <strong id="texto-respuesta-ilustracion">—</strong>. El estudiante escribe un número y se califica solo.</p>
+      </fieldset>
+
+      <fieldset id="campo-medio-generico" class="campo-medio">
         <legend>Medio (opcional)</legend>
         <div class="fila-campos">
           <label>Tipo

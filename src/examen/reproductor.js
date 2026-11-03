@@ -1,6 +1,8 @@
 import { nube } from "../nube/nube.js";
 import { urlEmbebibleDeVideo, esEmbedDePlataforma, urlVisorDocumento } from "./medios.js";
 import { colorDeMateria } from "../colorMateria.js";
+import { crearBotonCalculadora } from "./calculadoras.js";
+import { crearIlustracionSvg } from "./ilustraciones.js";
 
 /**
  * Reproductor de un examen "de autoría" (modo == "autoria"): reemplaza el
@@ -24,8 +26,15 @@ export function crearReproductor({ contenedor, examenId, nie, sesionId }) {
   async function iniciar() {
     n = await nube();
     const { db, fs } = n;
-    const foto = await fs.getDocs(fs.query(fs.collection(db, "examenes", examenId, "items"), fs.orderBy("orden")));
+    const [foto, examen] = await Promise.all([
+      fs.getDocs(fs.query(fs.collection(db, "examenes", examenId, "items"), fs.orderBy("orden"))),
+      fs.getDoc(fs.doc(db, "examenes", examenId)),
+    ]);
     items = foto.docs.map((d) => ({ id: d.id, ...d.data() }));
+    // Texto grande (2026-11-03, exámenes de lectura de primero/segundo
+    // grado): una sola clase en el contenedor, el resto lo resuelve
+    // estilos.css (.reproductor-grande ...).
+    contenedor.classList.toggle("reproductor-grande", examen.data()?.tamano_texto === "grande");
     contenedor.hidden = false;
     if (!items.length) {
       contenedor.replaceChildren(el("p", { clase: "tenue", texto: "Este examen todavía no tiene preguntas." }));
@@ -54,6 +63,8 @@ export function crearReproductor({ contenedor, examenId, nie, sesionId }) {
     }
     cuerpo.append(el("h2", { texto: item.enunciado }));
     if (item.medio) cuerpo.append(renderMedio(item.medio));
+    if (item.ilustracion) cuerpo.append(crearIlustracionSvg(item.ilustracion));
+    if (item.herramienta) cuerpo.append(crearBotonCalculadora(item.herramienta));
 
     const campoRespuesta = el("div", { clase: "reproductor-respuesta" });
     const obtenerValor = renderCampoSegunTipo(item, campoRespuesta);
@@ -174,6 +185,16 @@ export function crearReproductor({ contenedor, examenId, nie, sesionId }) {
 
     if (item.tipo === "pizarra") {
       return renderPizarra(contenedorCampo);
+    }
+
+    if (item.tipo === "problema_ilustrado") {
+      const campo = el("input");
+      campo.type = "number";
+      campo.inputMode = "numeric";
+      campo.className = "reproductor-numero";
+      campo.placeholder = "Escribe el número";
+      contenedorCampo.append(campo);
+      return () => (campo.value.trim() ? campo.value.trim() : undefined);
     }
 
     contenedorCampo.append(el("p", { clase: "mensaje-error", texto: `Tipo de pregunta desconocido: ${item.tipo}` }));

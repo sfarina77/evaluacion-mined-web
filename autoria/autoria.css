@@ -151,6 +151,15 @@
   margin-top: 0;
 }
 
+/* Problema ilustrado (2026-11-03) -- ver src/examen/ilustraciones.js. */
+.vista-previa-ilustracion {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  background: var(--superficie-alta);
+  border-radius: 8px;
+}
+
 /* ------------------------------------------------ biblioteca de contenidos */
 
 .biblioteca-contenidos {

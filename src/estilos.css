@@ -268,6 +268,95 @@ input::placeholder {
   border-radius: 10px;
 }
 
+/* Calculadora de apoyo (2026-11-03) -- ver src/examen/calculadoras.js.
+   align-self: flex-start por el mismo motivo que .badge-materia: dentro de
+   .reproductor-pregunta (flex column) un bloque sin esto se estira a todo
+   el ancho. */
+.envoltorio-calculadora {
+  align-self: flex-start;
+}
+
+.panel-calculadora {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 40;
+  display: grid;
+  gap: 6px;
+  background: var(--superficie-campo);
+  border: 1px solid var(--borde-campo);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  max-width: calc(100vw - 32px);
+}
+
+.panel-calculadora-cerrar {
+  justify-self: end;
+}
+
+.calculadora {
+  display: grid;
+  gap: 6px;
+  width: 260px;
+  max-width: calc(100vw - 52px);
+}
+
+.calculadora-pantalla {
+  background: var(--fondo-examen);
+  border: 1px solid var(--borde-campo);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: right;
+  font-size: 1.3rem;
+  font-family: monospace;
+  min-height: 1.6em;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.calculadora-fila {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.calculadora-fila button,
+.calculadora-control {
+  padding: 10px 0;
+  border: 1px solid var(--borde-campo);
+  border-radius: 8px;
+  background: var(--superficie-campo);
+  color: var(--texto-principal);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.calculadora-igual {
+  background: var(--acento-primario) !important;
+  color: var(--texto-sobre-acento) !important;
+  border-color: var(--acento-primario) !important;
+}
+
+.calculadora-grafica {
+  width: min(360px, calc(100vw - 52px));
+  height: 320px;
+}
+
+/* Problema ilustrado (2026-11-03) -- ver src/examen/ilustraciones.js. */
+.reproductor-numero {
+  width: 160px;
+  height: 52px;
+  padding: 0 14px;
+  background: var(--superficie-campo);
+  border: 1px solid var(--borde-campo);
+  border-radius: 8px;
+  color: var(--texto-principal);
+  font-size: 1.3rem;
+  text-align: center;
+}
+
 .reproductor-respuesta {
   display: flex;
   flex-direction: column;
@@ -416,4 +505,45 @@ dialog {
 
 dialog::backdrop {
   background: rgba(0, 0, 0, 0.6);
+}
+
+/* ------------------------------------------------------ texto/imagen grande */
+
+/* Exámenes de lectura de primero/segundo grado (2026-11-03): un niño que
+   recién aprende a leer necesita letra e imágenes bastante más grandes que
+   un texto de noveno grado -- esto es una sola clase en #contenedor-
+   reproductor (ver reproductor.js::iniciar, examenes/{codigo}.tamano_texto),
+   no algo que el docente tenga que ajustar pregunta por pregunta. */
+.reproductor-grande .reproductor-pregunta {
+  width: min(900px, calc(100vw - 48px));
+}
+
+.reproductor-grande .reproductor-pregunta h2 {
+  font-size: 2rem;
+  line-height: 1.3;
+}
+
+.reproductor-grande .reproductor-medio-imagen {
+  max-width: 100%;
+  min-height: 220px;
+}
+
+.reproductor-grande .reproductor-opcion {
+  padding: 18px 20px;
+  font-size: 1.3rem;
+}
+
+.reproductor-grande .reproductor-opcion input {
+  width: 28px;
+  height: 28px;
+}
+
+.reproductor-grande .reproductor-texto,
+.reproductor-grande .reproductor-numero {
+  font-size: 1.4rem;
+}
+
+.reproductor-grande .boton {
+  font-size: 1.2rem;
+  height: 56px;
 }
