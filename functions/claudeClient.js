@@ -14,6 +14,32 @@
 const MODELO = "claude-sonnet-5-5";
 const URL_API = "https://api.anthropic.com/v1/messages";
 
+/** Una sola llamada a la API de Mensajes, compartida por calificar y generar
+ * -- ambas solo difieren en el prompt y en cuántos tokens necesitan de vuelta. */
+async function llamarClaude({ apiKey, prompt, maxTokens }) {
+  const respuesta = await fetch(URL_API, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: MODELO,
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!respuesta.ok) {
+    const detalle = await respuesta.text().catch(() => "");
+    throw new Error(`Claude API ${respuesta.status}: ${detalle.slice(0, 300)}`);
+  }
+
+  const datos = await respuesta.json();
+  return datos.content?.[0]?.text ?? "";
+}
+
 /**
  * Pide a Claude que califique una respuesta de interpretación/respuesta
  * completa contra una rúbrica, y que devuelva el resultado en un bloque JSON
@@ -32,25 +58,15 @@ export async function calificarConClaude({ apiKey, enunciado, rubrica, respuesta
     `Responde SOLO con un bloque JSON, sin texto antes ni después, con esta forma exacta:\n` +
     `{"puntos": <número entre 0 y ${puntosMaximos}>, "justificacion": "<una o dos frases, en español, dirigidas al docente, explicando el puntaje sugerido>"}`;
 
-  const respuesta = await fetch(URL_API, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: MODELO,
-      max_tokens: 300,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
+  return llamarClaude({ apiKey, prompt, maxTokens: 300 });
+}
 
-  if (!respuesta.ok) {
-    const detalle = await respuesta.text().catch(() => "");
-    throw new Error(`Claude API ${respuesta.status}: ${detalle.slice(0, 300)}`);
-  }
-
-  const datos = await respuesta.json();
-  return datos.content?.[0]?.text ?? "";
+/**
+ * Pide a Claude que proponga preguntas de examen a partir de un contenido
+ * (ver generacion.js::construirPrompt/interpretarPreguntasIA). Devuelve el
+ * texto crudo -- nada de esto se guarda en Firestore automáticamente, el
+ * docente decide qué aceptar desde autoria/autoria.js.
+ */
+export async function generarPreguntasConClaude({ apiKey, prompt }) {
+  return llamarClaude({ apiKey, prompt, maxTokens: 2000 });
 }

@@ -106,6 +106,7 @@ async function entrar(usuario) {
 
   configurarFormularioExamen();
   configurarItems();
+  configurarGenerador();
 }
 
 function limpiarSuscripciones() {
@@ -274,17 +275,89 @@ function configurarItems() {
   });
 }
 
+// --------------------------------------------------------- generar con IA
+
+function configurarGenerador() {
+  $("boton-generar").addEventListener("click", generarConIA);
+}
+
+async function generarConIA() {
+  if (!estado.seleccionado) {
+    window.alert("Primero guarda los datos del examen (código, nombre) antes de generar preguntas.");
+    return;
+  }
+  const contenido = $("generador-contenido").value.trim();
+  const error = $("generador-error");
+  error.hidden = true;
+  if (!contenido) {
+    error.textContent = "Pega un contenido primero (un tema, un párrafo, un texto de lectura).";
+    error.hidden = false;
+    return;
+  }
+
+  const { ffn, fns } = estado.n;
+  const boton = $("boton-generar");
+  boton.disabled = true;
+  $("generador-cargando").hidden = false;
+  try {
+    // "Callable": a diferencia de calificarRespuesta (que se dispara sola al
+    // guardar una respuesta), esta función SÍ la invoca el docente a
+    // propósito, mientras arma el examen -- ver functions/index.js.
+    const llamar = ffn.httpsCallable(fns, "generarPreguntas");
+    const resultado = await llamar({ contenido, cantidad: Number($("generador-cantidad").value) || 4 });
+    pintarBorradores(resultado.data.preguntas ?? []);
+  } catch (err) {
+    console.error("[autoria] no se pudo generar preguntas:", err);
+    error.textContent = err?.message?.includes("permission-denied")
+      ? "No tienes permiso para generar preguntas en este examen."
+      : "No se pudo generar preguntas. Intenta de nuevo en un momento.";
+    error.hidden = false;
+  } finally {
+    boton.disabled = false;
+    $("generador-cargando").hidden = true;
+  }
+}
+
+function pintarBorradores(preguntas) {
+  $("lista-borradores").replaceChildren(
+    ...preguntas.map((pregunta) => {
+      const fila = el(
+        "li",
+        { clase: "fila-item fila-borrador" },
+        el(
+          "div",
+          { clase: "resumen-item" },
+          el("strong", { texto: TITULOS_TIPO[pregunta.tipo] ?? pregunta.tipo }),
+          el("p", { texto: pregunta.enunciado }),
+        ),
+      );
+      const boton = el("button", { clase: "boton boton-secundario", texto: "Revisar y agregar" });
+      boton.type = "button";
+      boton.addEventListener("click", () => abrirDialogoItem(null, pregunta));
+      fila.append(boton);
+      return fila;
+    }),
+  );
+}
+
 function actualizarCamposSegunTipo() {
   const tipo = $("item-tipo").value;
   $("campo-opciones").hidden = tipo !== "seleccion_simple" && tipo !== "seleccion_multiple";
   $("campo-rubrica").hidden = tipo !== "interpretacion" && tipo !== "respuesta_completa";
 }
 
-async function abrirDialogoItem(item) {
+/**
+ * Abre el diálogo de pregunta. `item` es una pregunta YA guardada (se edita);
+ * `borrador` es una sugerencia de la IA que todavía no existe en Firestore
+ * (se trata como "nueva", el docente la revisa/edita antes de guardarla por
+ * primera vez). Nunca se pasan los dos juntos.
+ */
+async function abrirDialogoItem(item, borrador) {
   $("form-item").reset();
   $("mensaje-item").hidden = true;
+  $("sugerencia-medio-ia").hidden = true;
   estado.editandoItemId = item?.id ?? null;
-  $("titulo-dialogo-item").textContent = item ? "Editar pregunta" : "Nueva pregunta";
+  $("titulo-dialogo-item").textContent = item ? "Editar pregunta" : borrador ? "Revisar sugerencia de la IA" : "Nueva pregunta";
   $("boton-eliminar-item").hidden = !item;
 
   if (item) {
@@ -307,6 +380,19 @@ async function abrirDialogoItem(item) {
       $("item-rubrica").value = clave?.rubrica ?? "";
     } catch (error) {
       console.error("[autoria] no se pudo leer la clave:", error);
+    }
+  } else if (borrador) {
+    $("item-tipo").value = borrador.tipo;
+    $("item-enunciado").value = borrador.enunciado ?? "";
+    $("item-opciones").value = (borrador.opciones ?? []).join("\n");
+    $("item-correctas").value = Array.isArray(borrador.respuestaCorrecta)
+      ? borrador.respuestaCorrecta.join("\n")
+      : (borrador.respuestaCorrecta ?? "");
+    $("item-rubrica").value = borrador.rubrica ?? "";
+    $("item-puntos").value = borrador.puntos ?? 10;
+    if (borrador.sugerenciaMedio) {
+      $("sugerencia-medio-ia").textContent = `Sugerencia de la IA de apoyo visual: ${borrador.sugerenciaMedio}`;
+      $("sugerencia-medio-ia").hidden = false;
     }
   } else {
     $("item-puntos").value = 10;

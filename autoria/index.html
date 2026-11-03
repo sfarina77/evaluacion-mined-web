@@ -87,6 +87,25 @@
           <p id="mensaje-examen" class="tenue" hidden></p>
         </form>
 
+        <!-- Generar preguntas con IA (2026-11-03): a partir de un contenido
+             (tema, párrafo, texto de lectura), Claude PROPONE preguntas --
+             nunca las guarda directo. Cada una se revisa/edita en el mismo
+             diálogo de "Nueva pregunta" antes de agregarla de verdad. -->
+        <section class="generador-ia">
+          <h2 class="titulo-seccion">Generar preguntas con IA</h2>
+          <p class="tenue">Pega un tema, un párrafo o un texto de lectura. La IA propone preguntas; tú decides cuáles usar y puedes editarlas antes de guardarlas.</p>
+          <textarea id="generador-contenido" rows="4" placeholder="Ej: La fotosíntesis es el proceso por el cual las plantas..."></textarea>
+          <div class="generador-controles">
+            <label>Cantidad
+              <input id="generador-cantidad" type="number" min="1" max="8" value="4" />
+            </label>
+            <button id="boton-generar" type="button" class="boton boton-primario">Generar con IA</button>
+            <span id="generador-cargando" class="tenue" hidden>Pensando…</span>
+          </div>
+          <p id="generador-error" class="mensaje-error" hidden></p>
+          <ol id="lista-borradores" class="lista-items lista-borradores"></ol>
+        </section>
+
         <h2 class="titulo-seccion">Preguntas</h2>
         <ol id="lista-items" class="lista-items"></ol>
         <p id="sin-items" class="tenue" hidden>Todavía no hay preguntas. Agrega la primera abajo.</p>
@@ -131,6 +150,7 @@
           </label>
         </div>
         <p class="tenue">Fase 1: solo links embebidos, todavía no se sube el archivo directo -- ver README.md.</p>
+        <p id="sugerencia-medio-ia" class="sugerencia-ia" hidden></p>
       </fieldset>
 
       <div id="campo-opciones" class="campo-opciones">

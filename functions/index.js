@@ -21,6 +21,7 @@
  */
 
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
@@ -31,13 +32,26 @@ import {
   calificarSeleccion,
   interpretarRespuestaIA,
 } from "./calificacion.js";
-import { calificarConClaude } from "./claudeClient.js";
+import { construirPrompt, interpretarPreguntasIA } from "./generacion.js";
+import { calificarConClaude, generarPreguntasConClaude } from "./claudeClient.js";
 
 initializeApp();
 
 // Se configura una sola vez: `firebase functions:secrets:set ANTHROPIC_API_KEY`
 // (pide la clave interactivamente, no queda en ningún archivo del repo).
 const CLAVE_ANTHROPIC = defineSecret("ANTHROPIC_API_KEY");
+
+/** Mismo criterio que docenteDe()/esDocente() de nube/firestore.rules, pero
+ * reimplementado acá: una Cloud Function "callable" no pasa por las reglas
+ * de Firestore, así que el permiso hay que verificarlo a mano con el token
+ * de autenticación que ya trae la llamada. */
+async function esDocenteOAdmin(auth) {
+  if (!auth?.token?.email || !auth.token.email_verified) return false;
+  const correo = auth.token.email.toLowerCase();
+  if (correo.endsWith("@edu.gob.sv")) return true;
+  const admin = await getFirestore().doc(`admins/${correo}`).get();
+  return admin.exists;
+}
 
 export const calificarRespuesta = onDocumentCreated(
   { document: "sesiones/{sesionId}/respuestas/{itemId}", secrets: [CLAVE_ANTHROPIC] },
@@ -103,3 +117,43 @@ export const calificarRespuesta = onDocumentCreated(
     }
   },
 );
+
+const MAX_CONTENIDO = 6000; // caracteres -- tope de costo/abuso, no una limitación técnica de Claude
+const MAX_PREGUNTAS = 8;
+
+/**
+ * Función "callable": el docente la invoca desde autoria/autoria.js mientras
+ * arma el examen, pegando un contenido (tema, párrafo, texto de lectura).
+ * Devuelve preguntas SUGERIDAS -- no escribe nada en Firestore. El docente
+ * revisa cada una y decide cuáles agregar al examen (mismo botón "Guardar"
+ * que ya usa para una pregunta escrita a mano), igual que la calificación
+ * por IA nunca es la nota final sin que alguien la confirme.
+ */
+export const generarPreguntas = onCall({ secrets: [CLAVE_ANTHROPIC] }, async (request) => {
+  if (!(await esDocenteOAdmin(request.auth))) {
+    throw new HttpsError("permission-denied", "Esta función es solo para docentes/administradores.");
+  }
+
+  const contenido = String(request.data?.contenido ?? "").trim();
+  if (!contenido) throw new HttpsError("invalid-argument", "Falta el contenido para generar preguntas.");
+  if (contenido.length > MAX_CONTENIDO) {
+    throw new HttpsError("invalid-argument", `El contenido es muy largo (máximo ${MAX_CONTENIDO} caracteres).`);
+  }
+  const cantidad = Math.min(Math.max(Number(request.data?.cantidad) || 4, 1), MAX_PREGUNTAS);
+
+  try {
+    const textoCrudo = await generarPreguntasConClaude({
+      apiKey: CLAVE_ANTHROPIC.value(),
+      prompt: construirPrompt(contenido, cantidad),
+    });
+    const preguntas = interpretarPreguntasIA(textoCrudo);
+    if (!preguntas.length) {
+      throw new HttpsError("internal", "La IA no devolvió preguntas utilizables. Intenta con un contenido más claro o corto.");
+    }
+    return { preguntas };
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    console.error("[generarPreguntas] fallo llamando a Claude:", error);
+    throw new HttpsError("internal", "No se pudo generar preguntas en este momento.");
+  }
+});

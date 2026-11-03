@@ -13,17 +13,29 @@ export function nubeConfigurada() {
   return CONFIG_FIREBASE !== null;
 }
 
-/** { app, auth, db, fa (firebase-auth), fs (firebase-firestore) } */
+/** { app, auth, db, fns, fa (firebase-auth), fs (firebase-firestore), ffn (firebase-functions) } */
 export function nube() {
   if (!nubeConfigurada()) return Promise.reject(new Error("Firebase sin configurar (src/nube/configNube.js)"));
   cargada ??= (async () => {
-    const [fapp, fa, fs] = await Promise.all([
+    const [fapp, fa, fs, ffn] = await Promise.all([
       import(`${BASE}/firebase-app.js`),
       import(`${BASE}/firebase-auth.js`),
       import(`${BASE}/firebase-firestore.js`),
+      // Solo lo usa autoria.js (generarPreguntas, función "callable"); el
+      // resto de las páginas no la necesitan, pero cargarla de más no rompe
+      // nada -- es perezosa por página igual que las otras tres.
+      import(`${BASE}/firebase-functions.js`),
     ]);
     const app = fapp.initializeApp(CONFIG_FIREBASE);
-    return { app, auth: fa.getAuth(app), db: fs.getFirestore(app), fa, fs };
+    return {
+      app,
+      auth: fa.getAuth(app),
+      db: fs.getFirestore(app),
+      fns: ffn.getFunctions(app),
+      fa,
+      fs,
+      ffn,
+    };
   })();
   return cargada;
 }
