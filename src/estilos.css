@@ -229,9 +229,14 @@ input::placeholder {
 }
 
 /* Materia por pregunta (2026-11-03): mismo criterio y mismo color que
-   autoria.css -- ver src/colorMateria.js. */
+   autoria.css -- ver src/colorMateria.js. align-self: flex-start porque
+   .reproductor-pregunta es un flex column (align-items: stretch por
+   omisión) -- sin esto, la insignia se estira a todo el ancho de la
+   pregunta en vez de quedar del tamaño de su texto (visto en una prueba
+   real de navegador, 2026-11-03). */
 .badge-materia {
   display: inline-block;
+  align-self: flex-start;
   margin: 6px 0 0;
   padding: 2px 10px;
   border-radius: 999px;
