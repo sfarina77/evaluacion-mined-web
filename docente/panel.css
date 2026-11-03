@@ -11,8 +11,11 @@
   --texto: #1f2a44;
   --texto-secundario: #5b6b8c;
   --acento: #3b6df0;
+  --acento-2: #8b5cf6;
+  --calido: #ff8a5c;
   --texto-sobre-acento: #ffffff;
-  --boton-secundario: #e8edfa;
+  --boton-secundario: #efe9ff;
+  --boton-secundario-texto: #5a3fd6;
   --ok: #16a34a;
   --aviso: #d97706;
   --grave: #dc2626;
@@ -35,7 +38,11 @@ body {
      (ver el arreglo de min-width en autoria.css/dashboard.css), esto evita
      que empuje la página entera y haga falta desplazar de lado a lado. */
   overflow-x: hidden;
-  background: var(--fondo);
+  /* Degradado suave en vez de un solo tono plano -- --fondo sigue existiendo
+     tal cual para diálogos/piezas pequeñas (un degradado ahí se vería como
+     una costura desalineada con el fondo de la página). */
+  background: linear-gradient(135deg, #e7f1ff 0%, #f1ecff 45%, #fff3e3 100%);
+  background-attachment: fixed;
   color: var(--texto);
   font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -49,6 +56,10 @@ textarea {
 h1,
 h2 {
   margin: 0;
+}
+
+h1 {
+  color: var(--acento);
 }
 
 .tenue {
@@ -68,11 +79,14 @@ h2 {
   justify-content: space-between;
   gap: 12px;
   padding: 12px 20px;
-  border-bottom: 1px solid var(--borde);
+  background: var(--superficie);
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(90deg, var(--acento), var(--acento-2), var(--calido)) 1;
 }
 
 .marca {
   font-weight: 800;
+  color: var(--acento);
 }
 
 .marca span {
@@ -101,20 +115,26 @@ h2 {
   height: 42px;
   padding: 0 18px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-weight: 700;
   color: var(--texto);
   cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.boton:hover {
+  transform: translateY(-1px);
 }
 
 .boton-primario {
-  background: var(--acento);
+  background: linear-gradient(135deg, var(--acento), var(--acento-2));
   color: var(--texto-sobre-acento);
+  box-shadow: 0 4px 14px rgba(59, 109, 240, 0.35);
 }
 
 .boton-secundario {
   background: var(--boton-secundario);
-  color: var(--texto);
+  color: var(--boton-secundario-texto);
 }
 
 .boton-texto {
@@ -143,6 +163,7 @@ h2 {
 .tarjeta {
   background: var(--superficie);
   border: 1px solid var(--borde);
+  border-top: 4px solid var(--acento);
   border-radius: 16px;
   padding: 28px;
   box-shadow: 0 2px 10px rgba(31, 42, 68, 0.06);
