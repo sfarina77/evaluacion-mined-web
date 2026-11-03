@@ -219,6 +219,38 @@ Antes de activarlo con estudiantes reales: confirmar el ID exacto del modelo de 
 `functions/claudeClient.js` contra la documentación vigente de Anthropic (se dejó sin la fecha de
 snapshot a propósito, porque inventarla desde acá habría sido adivinar).
 
+**Desplegado en producción el 2026-11-03** (proyecto `evaluacionsv`, cuenta de facturación ECOS):
+reglas, índices y las dos funciones (`calificarRespuesta`, `generarPreguntas`) están activas.
+
+### Generar preguntas con IA desde un contenido
+
+En `autoria/autoria.js`, el bloque "Generar preguntas con IA" manda un texto pegado por el docente a
+la función callable `generarPreguntas` (`functions/index.js` + `functions/generacion.js`), que le
+pide a Claude una lista de preguntas en JSON y las devuelve para revisión -- **nunca se guardan
+solas**: cada una abre el mismo diálogo de "Nueva pregunta" (`abrirDialogoItem`, ahora acepta un
+`borrador` además de un `item` existente) para que el docente la edite y decida si la agrega.
+Límite de contenido: 20,000 caracteres (tope de costo/abuso, no técnico de Claude).
+
+### Biblioteca de contenidos (`contenidos/{id}`)
+
+Guarda el contenido de una materia/grado/tema **una sola vez** para reutilizarlo en cualquier
+examen al generar preguntas -- antes de esto, el docente tenía que pegar el mismo texto cada vez y
+no había dónde guardarlo. Compartida entre todos los docentes/admins (como un banco de materiales
+institucional, no uno privado por persona); el estudiante nunca la lee. El selector "Usar un
+contenido guardado" solo copia el texto guardado al cuadro del generador -- no cambia en nada la
+función `generarPreguntas`.
+
+**Lo que esto todavía NO resuelve** (para no prometer de más):
+- **No hay subida de archivo** (PDF, Word): solo texto pegado o escrito a mano. Subir un PDF
+  necesitaría extraer su texto en el navegador (p. ej. con PDF.js) antes de guardarlo -- es una
+  librería nueva, no se agregó sin que alguien la pidiera específicamente.
+- **No hay "el contenido del año completo" como una sola pieza**: el tope de 20,000 caracteres
+  obliga a partir el material por tema/unidad, no por materia completa. Es intencional: generar
+  preguntas a partir de un libro entero de un jalón daría resultados peores (mucho contenido,
+  pregunta genérica) que generarlas tema por tema.
+- Cualquier docente puede editar o borrar el contenido de cualquier otro -- no hay dueño por
+  entrada todavía, mismo criterio "banco compartido" que ya se explicó arriba.
+
 ## Pendiente, no bloqueante
 
 - **Íconos de la PWA** (`public/icons/PENDIENTE.txt`): son placeholders, hace falta generarlos.

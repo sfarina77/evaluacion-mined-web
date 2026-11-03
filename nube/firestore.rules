@@ -39,6 +39,27 @@ service cloud.firestore {
       allow get: if correoVerificado() && correo() == email;
     }
 
+    // Biblioteca de contenidos (2026-11-03): material de apoyo por
+    // materia/grado/tema, reutilizable entre exámenes -- lo que alimenta
+    // "Generar preguntas con IA" en autoria/autoria.js. Compartida entre
+    // todos los docentes/admins a propósito (como un banco de materiales de
+    // la institución, no uno privado por persona); no la ve el estudiante.
+    match /contenidos/{id} {
+      allow read: if esDocente() || esAdmin();
+      allow create: if (esDocente() || esAdmin())
+        && request.resource.data.keys().hasOnly(['materia', 'grado', 'tema', 'texto', 'creadoPor', 'ts'])
+        && request.resource.data.texto is string
+        && request.resource.data.texto.size() > 0
+        && request.resource.data.texto.size() <= 20000
+        && request.resource.data.creadoPor == correo();
+      allow update: if (esDocente() || esAdmin())
+        && request.resource.data.keys().hasOnly(['materia', 'grado', 'tema', 'texto', 'creadoPor', 'ts'])
+        && request.resource.data.texto is string
+        && request.resource.data.texto.size() > 0
+        && request.resource.data.texto.size() <= 20000;
+      allow delete: if esDocente() || esAdmin();
+    }
+
     match /examenes/{codigo} {
       // Ampliado (2026-11-03): el reproductor (src/examen/reproductor.js)
       // necesita leer este documento ANTES de empezar el examen, desde la

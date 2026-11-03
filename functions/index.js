@@ -118,7 +118,11 @@ export const calificarRespuesta = onDocumentCreated(
   },
 );
 
-const MAX_CONTENIDO = 6000; // caracteres -- tope de costo/abuso, no una limitación técnica de Claude
+// Mismo tope que nube/firestore.rules exige para contenidos/{id}.texto -- un
+// contenido guardado de la biblioteca (ver autoria/autoria.js) tiene que
+// entrar completo; sigue siendo un tope de costo/abuso, no una limitación
+// técnica de Claude.
+const MAX_CONTENIDO = 20000;
 const MAX_PREGUNTAS = 8;
 
 /**

@@ -23,6 +23,8 @@ const estado = {
   desuscribirExamenes: null,
   desuscribirItems: null,
   editandoItemId: null, // null = creando uno nuevo
+  contenidos: new Map(), // id -> {materia, grado, tema, texto}, biblioteca compartida
+  desuscribirContenidos: null,
 };
 
 function mostrar(vista) {
@@ -104,16 +106,26 @@ async function entrar(usuario) {
     pintarExamenes();
   });
 
+  // Biblioteca de contenidos: compartida entre todos los docentes/admins, no
+  // depende del examen seleccionado -- se carga una sola vez al entrar.
+  estado.desuscribirContenidos = fs.onSnapshot(fs.collection(db, "contenidos"), (foto) => {
+    estado.contenidos = new Map(foto.docs.map((d) => [d.id, d.data()]));
+    pintarSelectorContenidos();
+  });
+
   configurarFormularioExamen();
   configurarItems();
   configurarGenerador();
+  configurarBiblioteca();
 }
 
 function limpiarSuscripciones() {
   estado.desuscribirExamenes?.();
   estado.desuscribirItems?.();
+  estado.desuscribirContenidos?.();
   estado.desuscribirExamenes = null;
   estado.desuscribirItems = null;
+  estado.desuscribirContenidos = null;
   estado.seleccionado = null;
 }
 
@@ -450,6 +462,80 @@ async function guardarItem() {
     console.error("[autoria] no se pudo guardar la pregunta:", error);
     mensaje.textContent = "No se pudo guardar.";
     mensaje.hidden = false;
+  }
+}
+
+// -------------------------------------------------------- biblioteca de contenidos
+
+function pintarSelectorContenidos() {
+  const select = $("selector-contenido");
+  const seleccionActual = select.value;
+  select.replaceChildren(el("option", { texto: "-- elegir --" }));
+  for (const [id, c] of [...estado.contenidos.entries()].sort((a, b) =>
+    `${a[1].materia} ${a[1].grado} ${a[1].tema}`.localeCompare(`${b[1].materia} ${b[1].grado} ${b[1].tema}`),
+  )) {
+    const opcion = el("option", { texto: `${c.materia} — ${c.grado} — ${c.tema}` });
+    opcion.value = id;
+    select.append(opcion);
+  }
+  // Conserva la selección si el elemento sigue existiendo tras el refresco.
+  if ([...select.options].some((o) => o.value === seleccionActual)) select.value = seleccionActual;
+}
+
+function configurarBiblioteca() {
+  $("boton-guardar-contenido").addEventListener("click", guardarContenido);
+  $("boton-usar-contenido").addEventListener("click", () => {
+    const id = $("selector-contenido").value;
+    const contenido = estado.contenidos.get(id);
+    if (!contenido) {
+      window.alert("Elige un contenido guardado de la lista primero.");
+      return;
+    }
+    $("generador-contenido").value = contenido.texto;
+    $("generador-contenido").scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+}
+
+async function guardarContenido() {
+  const { db, fs } = estado.n;
+  const error = $("contenido-error");
+  error.hidden = true;
+
+  const materia = $("contenido-materia").value.trim();
+  const grado = $("contenido-grado").value.trim();
+  const tema = $("contenido-tema").value.trim();
+  const texto = $("contenido-texto").value.trim();
+  if (!materia || !grado || !tema || !texto) {
+    error.textContent = "Completa materia, grado, tema y el contenido antes de guardar.";
+    error.hidden = false;
+    return;
+  }
+  if (texto.length > 20000) {
+    error.textContent = `El contenido es muy largo (${texto.length} caracteres, máximo 20,000). Pártelo en más de un tema.`;
+    error.hidden = false;
+    return;
+  }
+
+  $("contenido-guardando").hidden = false;
+  try {
+    await fs.setDoc(fs.doc(db, "contenidos", crypto.randomUUID()), {
+      materia,
+      grado,
+      tema,
+      texto,
+      creadoPor: estado.correo,
+      ts: fs.serverTimestamp(),
+    });
+    $("contenido-materia").value = "";
+    $("contenido-grado").value = "";
+    $("contenido-tema").value = "";
+    $("contenido-texto").value = "";
+  } catch (err) {
+    console.error("[autoria] no se pudo guardar el contenido:", err);
+    error.textContent = "No se pudo guardar el contenido.";
+    error.hidden = false;
+  } finally {
+    $("contenido-guardando").hidden = true;
   }
 }
 

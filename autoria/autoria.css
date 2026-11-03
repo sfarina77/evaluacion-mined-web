@@ -44,6 +44,7 @@
 }
 
 .form-examen label,
+.biblioteca-contenidos label,
 #form-item label {
   display: flex;
   flex-direction: column;
@@ -53,6 +54,7 @@
 }
 
 .form-examen input,
+.biblioteca-contenidos input,
 #form-item input,
 #form-item select,
 #form-item textarea {
@@ -89,13 +91,40 @@
   border-color: var(--borde-acento);
 }
 
+/* ------------------------------------------------ biblioteca de contenidos */
+
+.biblioteca-contenidos {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.biblioteca-contenidos .fila-campos {
+  margin-bottom: 10px;
+}
+
+.usar-contenido {
+  align-items: flex-end;
+}
+
+#selector-contenido {
+  width: 100%;
+  padding: 9px 10px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  color: var(--texto);
+  font: inherit;
+}
+
 /* ------------------------------------------------------- generar con IA */
 
 .generador-ia {
   margin-bottom: 10px;
 }
 
-#generador-contenido {
+#generador-contenido,
+#contenido-texto {
   width: 100%;
   padding: 10px 12px;
   background: var(--superficie);
