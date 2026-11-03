@@ -29,3 +29,26 @@ export function colorDeMateria(materia) {
   }
   return PALETA[Math.abs(hash) % PALETA.length];
 }
+
+/**
+ * Agrupa preguntas por materia para la vista de autoría (2026-11-03): un
+ * examen "multi-materia" se revisa mejor agrupado que como una sola lista
+ * larga. El ORDEN DENTRO de cada grupo respeta `orden` (el que el estudiante
+ * ve al rendir el examen no se toca, esto es solo para mirarlo agrupado acá);
+ * los grupos van en el orden en que aparece cada materia por primera vez, y
+ * "Sin materia" siempre al final. Pura, para probarla sin DOM
+ * (test/colorMateria.test.js).
+ */
+export function agruparPorMateria(items) {
+  const grupos = new Map(); // materia (o null) -> items[]
+  for (const item of items) {
+    const clave = String(item.materia ?? "").trim() || null;
+    if (!grupos.has(clave)) grupos.set(clave, []);
+    grupos.get(clave).push(item);
+  }
+  const conMateria = [...grupos.entries()]
+    .filter(([materia]) => materia !== null)
+    .map(([materia, items]) => ({ materia, color: colorDeMateria(materia), items }));
+  const sinMateria = grupos.get(null);
+  return sinMateria ? [...conMateria, { materia: null, color: null, items: sinMateria }] : conMateria;
+}

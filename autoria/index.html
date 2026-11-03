@@ -159,12 +159,9 @@
           </div>
           <p id="contenido-error" class="mensaje-error" hidden></p>
 
-          <div class="fila-campos usar-contenido">
-            <label>Usar un contenido guardado
-              <select id="selector-contenido"><option value="">-- elegir --</option></select>
-            </label>
-            <button id="boton-usar-contenido" type="button" class="boton boton-secundario">Cargar en el generador ↓</button>
-          </div>
+          <h3 class="titulo-contenidos-guardados">Contenidos guardados -- clic para cargar en el generador ↓</h3>
+          <ol id="lista-contenidos" class="lista-items"></ol>
+          <p id="sin-contenidos" class="tenue" hidden>Todavía no hay contenidos guardados.</p>
         </section>
 
         <section class="generador-ia">
@@ -183,6 +180,10 @@
         </section>
 
         <h2 class="titulo-seccion">Preguntas</h2>
+        <div id="envoltorio-filtro-materia" class="campo-filtro-materia" hidden>
+          <label for="filtro-materia-items">Materia</label>
+          <select id="filtro-materia-items"></select>
+        </div>
         <ol id="lista-items" class="lista-items"></ol>
         <p id="sin-items" class="tenue" hidden>Todavía no hay preguntas. Agrega la primera abajo.</p>
 
@@ -241,6 +242,8 @@
               <option value="">Ninguno</option>
               <option value="imagen">Imagen (link)</option>
               <option value="video">Video (link, p. ej. YouTube)</option>
+              <option value="audio">Audio (link)</option>
+              <option value="documento">Documento (PDF/Word, link)</option>
               <option value="link">Otro link</option>
             </select>
           </label>
@@ -249,13 +252,13 @@
           </label>
         </div>
         <div class="fila-campos">
-          <label class="campo-archivo">O subir una imagen/video propio (hasta 20 MB)
-            <input id="item-medio-archivo" type="file" accept="image/*,video/*" />
+          <label class="campo-archivo">O subir un archivo propio (imagen, video, audio, PDF o Word -- hasta 20 MB)
+            <input id="item-medio-archivo" type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
           </label>
           <span id="item-medio-subiendo" class="tenue" hidden>Subiendo…</span>
         </div>
         <p id="item-medio-error" class="mensaje-error" hidden></p>
-        <p class="tenue">El link de arriba también acepta imágenes/videos ya alojados en otro sitio (p. ej. YouTube).</p>
+        <p class="tenue">El link de arriba también acepta archivos ya alojados en otro sitio (p. ej. un video de YouTube).</p>
         <p id="sugerencia-medio-ia" class="sugerencia-ia" hidden></p>
       </fieldset>
 

@@ -1,5 +1,6 @@
 import { nube, nubeConfigurada } from "../src/nube/nube.js";
-import { colorDeMateria } from "../src/colorMateria.js";
+import { colorDeMateria, agruparPorMateria } from "../src/colorMateria.js";
+import { tipoMedioDesdeMime } from "../src/examen/medios.js";
 
 /**
  * Autoría de exámenes (evaluacionsv.com/autoria): un docente crea un examen
@@ -111,7 +112,7 @@ async function entrar(usuario) {
   // depende del examen seleccionado -- se carga una sola vez al entrar.
   estado.desuscribirContenidos = fs.onSnapshot(fs.collection(db, "contenidos"), (foto) => {
     estado.contenidos = new Map(foto.docs.map((d) => [d.id, d.data()]));
-    pintarSelectorContenidos();
+    pintarListaContenidos();
   });
 
   configurarFormularioExamen();
@@ -258,9 +259,54 @@ function filaItem(item, indice, alHacerClic) {
   return fila;
 }
 
+/** El select "Materia" solo aparece si hay 2+ materias distintas entre las
+ * preguntas -- con 0 o 1, filtrar no ayuda a nadie, es ruido de más. */
+function pintarFiltroMateria() {
+  const materias = [...new Set(estado.items.map((i) => i.materia).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  $("envoltorio-filtro-materia").hidden = materias.length < 2;
+  if (materias.length < 2) return;
+
+  const select = $("filtro-materia-items");
+  const seleccionActual = select.value;
+  const opcionTodas = el("option", { texto: "Todas" });
+  opcionTodas.value = "";
+  select.replaceChildren(opcionTodas, ...materias.map((materia) => {
+    const opcion = el("option", { texto: materia });
+    opcion.value = materia;
+    return opcion;
+  }));
+  if (materias.includes(seleccionActual)) select.value = seleccionActual;
+}
+
+function cabeceraGrupoMateria(grupo) {
+  const cabecera = el("li", { clase: "cabecera-materia", texto: grupo.materia ?? "Sin materia" });
+  cabecera.style.borderLeftColor = grupo.color ?? "var(--borde)";
+  return cabecera;
+}
+
+/** Agrupada por materia (con cabeceras de color, ver agruparPorMateria) si
+ * hay más de una materia y no se filtró a una sola -- si el docente ya
+ * eligió una materia en el filtro, se ve como lista plana, sin repetir la
+ * cabecera para un solo grupo. El número de cada fila es su posición real en
+ * el examen completo (orden en que lo rinde el estudiante), no su posición
+ * dentro del filtro/grupo. */
 function pintarItems() {
   $("sin-items").hidden = estado.items.length > 0;
-  $("lista-items").replaceChildren(...estado.items.map((item, indice) => filaItem(item, indice, () => abrirDialogoItem(item))));
+  pintarFiltroMateria();
+
+  const filtro = $("envoltorio-filtro-materia").hidden ? "" : $("filtro-materia-items").value;
+  const fila = (item) => filaItem(item, estado.items.indexOf(item), () => abrirDialogoItem(item));
+
+  if (filtro) {
+    $("lista-items").replaceChildren(...estado.items.filter((i) => i.materia === filtro).map(fila));
+    return;
+  }
+
+  const grupos = agruparPorMateria(estado.items);
+  const mostrarCabeceras = grupos.length > 1;
+  $("lista-items").replaceChildren(
+    ...grupos.flatMap((grupo) => [...(mostrarCabeceras ? [cabeceraGrupoMateria(grupo)] : []), ...grupo.items.map(fila)]),
+  );
 }
 
 // -------------------------------------------------------- revisión final
@@ -282,13 +328,15 @@ function configurarRevision() {
 
 function pintarRevision() {
   $("sin-items-revision").hidden = estado.items.length > 0;
+  const fila = (item) =>
+    filaItem(item, estado.items.indexOf(item), () => {
+      $("dialogo-revision").close();
+      abrirDialogoItem(item);
+    });
+  const grupos = agruparPorMateria(estado.items);
+  const mostrarCabeceras = grupos.length > 1;
   $("lista-revision").replaceChildren(
-    ...estado.items.map((item, indice) =>
-      filaItem(item, indice, () => {
-        $("dialogo-revision").close();
-        abrirDialogoItem(item);
-      }),
-    ),
+    ...grupos.flatMap((grupo) => [...(mostrarCabeceras ? [cabeceraGrupoMateria(grupo)] : []), ...grupo.items.map(fila)]),
   );
 }
 
@@ -303,6 +351,7 @@ function configurarItems() {
 
   $("item-tipo").addEventListener("change", actualizarCamposSegunTipo);
   $("item-medio-archivo").addEventListener("change", subirMedioArchivo);
+  $("filtro-materia-items").addEventListener("change", pintarItems);
 
   $("boton-cancelar-item").addEventListener("click", () => $("dialogo-item").close());
 
@@ -328,11 +377,12 @@ function configurarItems() {
 }
 
 /**
- * Sube una imagen/video propio a Storage para el "Medio" de la pregunta
- * (2026-11-03) -- antes solo se podía pegar un link externo. La URL de
- * descarga que devuelve Storage se guarda en el MISMO campo item-medio-url
- * que ya existía, así que reproductor.js no necesita saber de dónde salió
- * el archivo, lo trata igual que cualquier otro link.
+ * Sube un archivo propio (imagen, video, audio, PDF o Word) a Storage para
+ * el "Medio" de la pregunta (2026-11-03) -- antes solo se podía pegar un
+ * link externo. La URL de descarga que devuelve Storage se guarda en el
+ * MISMO campo item-medio-url que ya existía, así que reproductor.js no
+ * necesita saber de dónde salió el archivo, lo trata igual que cualquier
+ * otro link.
  */
 async function subirMedioArchivo() {
   const campo = $("item-medio-archivo");
@@ -356,10 +406,9 @@ async function subirMedioArchivo() {
     campo.value = "";
     return;
   }
-  const esImagen = archivo.type.startsWith("image/");
-  const esVideo = archivo.type.startsWith("video/");
-  if (!esImagen && !esVideo) {
-    error.textContent = "Solo se aceptan imágenes o videos.";
+  const tipoMedio = tipoMedioDesdeMime(archivo.type);
+  if (!tipoMedio) {
+    error.textContent = "Solo se aceptan imágenes, videos, audio, PDF o Word.";
     error.hidden = false;
     campo.value = "";
     return;
@@ -374,7 +423,7 @@ async function subirMedioArchivo() {
     const ref = fst.ref(storage, `examenes/${estado.seleccionado}/medios/${nombre}`);
     await fst.uploadBytes(ref, archivo, { contentType: archivo.type });
     const url = await fst.getDownloadURL(ref);
-    $("item-medio-tipo").value = esImagen ? "imagen" : "video";
+    $("item-medio-tipo").value = tipoMedio;
     $("item-medio-url").value = url;
   } catch (err) {
     console.error("[autoria] no se pudo subir el archivo:", err);
@@ -580,35 +629,39 @@ async function guardarItem() {
 
 // -------------------------------------------------------- biblioteca de contenidos
 
-function pintarSelectorContenidos() {
-  const select = $("selector-contenido");
-  const seleccionActual = select.value;
-  select.replaceChildren(el("option", { texto: "-- elegir --" }));
-  for (const [id, c] of [...estado.contenidos.entries()].sort((a, b) =>
-    `${a[1].materia} ${a[1].grado} ${a[1].tema}`.localeCompare(`${b[1].materia} ${b[1].grado} ${b[1].tema}`),
-  )) {
-    const opcion = el("option", { texto: `${c.materia} — ${c.grado} — ${c.tema}` });
-    opcion.value = id;
-    select.append(opcion);
-  }
-  // Conserva la selección si el elemento sigue existiendo tras el refresco.
-  if ([...select.options].some((o) => o.value === seleccionActual)) select.value = seleccionActual;
+/** Lista de la biblioteca de contenidos (2026-11-03: antes un <select> con
+ * texto plano, ahora tarjetas con la insignia de materia a color -- mismo
+ * lenguaje visual que la lista de preguntas, ver src/colorMateria.js). Clic
+ * en una tarjeta carga ese contenido directo en el generador, sin un botón
+ * "Cargar" aparte. */
+function pintarListaContenidos() {
+  const entradas = [...estado.contenidos.entries()].sort((a, b) =>
+    `${a[1].materia ?? ""} ${a[1].grado} ${a[1].tema}`.localeCompare(`${b[1].materia ?? ""} ${b[1].grado} ${b[1].tema}`),
+  );
+  $("sin-contenidos").hidden = entradas.length > 0;
+  $("lista-contenidos").replaceChildren(
+    ...entradas.map(([id, c]) => {
+      const titulo = el("strong", { texto: `${c.grado} — ${c.tema}` });
+      const color = colorDeMateria(c.materia);
+      if (color) {
+        const insignia = el("span", { clase: "badge-materia", texto: c.materia });
+        insignia.style.background = color;
+        titulo.append(" ", insignia);
+      }
+      const fila = el("li", { clase: "fila-item" }, el("div", { clase: "resumen-item" }, titulo, el("p", { texto: (c.texto ?? "").slice(0, 140) })));
+      fila.addEventListener("click", () => {
+        $("generador-contenido").value = c.texto;
+        $("generador-contenido").scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      return fila;
+    }),
+  );
 }
 
 function configurarBiblioteca() {
   $("boton-guardar-contenido").addEventListener("click", guardarContenido);
   $("boton-importar-link").addEventListener("click", importarLink);
   $("contenido-archivo").addEventListener("change", importarArchivo);
-  $("boton-usar-contenido").addEventListener("click", () => {
-    const id = $("selector-contenido").value;
-    const contenido = estado.contenidos.get(id);
-    if (!contenido) {
-      window.alert("Elige un contenido guardado de la lista primero.");
-      return;
-    }
-    $("generador-contenido").value = contenido.texto;
-    $("generador-contenido").scrollIntoView({ behavior: "smooth", block: "center" });
-  });
 }
 
 // Mismo CDN y versión que ya se usó y verificó con curl en esta sesión --

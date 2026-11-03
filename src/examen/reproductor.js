@@ -1,5 +1,5 @@
 import { nube } from "../nube/nube.js";
-import { urlEmbebibleDeVideo, esEmbedDePlataforma } from "./medios.js";
+import { urlEmbebibleDeVideo, esEmbedDePlataforma, urlVisorDocumento } from "./medios.js";
 import { colorDeMateria } from "../colorMateria.js";
 
 /**
@@ -116,6 +116,23 @@ export function crearReproductor({ contenedor, examenId, nie, sesionId }) {
       video.controls = true;
       video.className = "reproductor-medio-video";
       return video;
+    }
+    if (medio.tipo === "audio") {
+      const audio = el("audio");
+      audio.src = medio.url;
+      audio.controls = true;
+      audio.className = "reproductor-medio-audio";
+      return audio;
+    }
+    if (medio.tipo === "documento") {
+      // PDF directo o Word envuelto en el visor de Google Docs, ver
+      // medios.js::urlVisorDocumento. Sigue siendo un <iframe> DENTRO de la
+      // misma página, nunca una pestaña nueva -- mismo motivo que el video,
+      // ver el comentario del archivo.
+      const marco = el("iframe");
+      marco.src = urlVisorDocumento(medio.url);
+      marco.className = "reproductor-medio-documento";
+      return marco;
     }
     // "link": por ahora no se incrusta (destino desconocido, podría negarse a
     // mostrarse en un iframe) -- se avisa en vez de fingir que se puede ver.

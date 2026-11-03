@@ -252,6 +252,17 @@ input::placeholder {
   border-radius: 10px;
 }
 
+.reproductor-medio-audio {
+  width: 100%;
+}
+
+.reproductor-medio-documento {
+  width: 100%;
+  height: 60vh;
+  border: 1px solid var(--borde-campo);
+  border-radius: 10px;
+}
+
 .reproductor-respuesta {
   display: flex;
   flex-direction: column;
