@@ -104,6 +104,19 @@
   border-color: var(--borde-acento);
 }
 
+/* Materia por pregunta (2026-11-03): color determinístico por nombre, ver
+   src/colorMateria.js -- mismo criterio en el reproductor del estudiante
+   (estilos.css) para que la misma materia se vea igual en ambos lados. */
+.badge-materia {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #ffffff;
+  vertical-align: middle;
+}
+
 /* ------------------------------------------------ biblioteca de contenidos */
 
 .biblioteca-contenidos {

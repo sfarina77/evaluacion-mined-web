@@ -225,6 +225,10 @@
         </select>
       </label>
 
+      <label>Materia (opcional -- para exámenes que mezclan varias)
+        <input id="item-materia" type="text" placeholder="Ej: Matemática" maxlength="60" />
+      </label>
+
       <label>Enunciado
         <textarea id="item-enunciado" rows="3" required></textarea>
       </label>
@@ -244,7 +248,14 @@
             <input id="item-medio-url" type="url" placeholder="https://..." />
           </label>
         </div>
-        <p class="tenue">Fase 1: solo links embebidos, todavía no se sube el archivo directo -- ver README.md.</p>
+        <div class="fila-campos">
+          <label class="campo-archivo">O subir una imagen/video propio (hasta 20 MB)
+            <input id="item-medio-archivo" type="file" accept="image/*,video/*" />
+          </label>
+          <span id="item-medio-subiendo" class="tenue" hidden>Subiendo…</span>
+        </div>
+        <p id="item-medio-error" class="mensaje-error" hidden></p>
+        <p class="tenue">El link de arriba también acepta imágenes/videos ya alojados en otro sitio (p. ej. YouTube).</p>
         <p id="sugerencia-medio-ia" class="sugerencia-ia" hidden></p>
       </fieldset>
 

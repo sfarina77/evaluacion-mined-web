@@ -1,5 +1,6 @@
 import { nube } from "../nube/nube.js";
 import { urlEmbebibleDeVideo, esEmbedDePlataforma } from "./medios.js";
+import { colorDeMateria } from "../colorMateria.js";
 
 /**
  * Reproductor de un examen "de autoría" (modo == "autoria"): reemplaza el
@@ -45,6 +46,12 @@ export function crearReproductor({ contenedor, examenId, nie, sesionId }) {
     const item = items[indice];
     const cuerpo = el("div", { clase: "reproductor-pregunta" });
     cuerpo.append(el("p", { clase: "reproductor-progreso", texto: `Pregunta ${indice + 1} de ${items.length}` }));
+    const color = colorDeMateria(item.materia);
+    if (color) {
+      const insignia = el("span", { clase: "badge-materia", texto: item.materia });
+      insignia.style.background = color;
+      cuerpo.append(insignia);
+    }
     cuerpo.append(el("h2", { texto: item.enunciado }));
     if (item.medio) cuerpo.append(renderMedio(item.medio));
 

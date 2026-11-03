@@ -1,4 +1,5 @@
 import { nube, nubeConfigurada } from "../src/nube/nube.js";
+import { colorDeMateria } from "../src/colorMateria.js";
 
 /**
  * Autoría de exámenes (evaluacionsv.com/autoria): un docente crea un examen
@@ -239,16 +240,18 @@ function configurarFormularioExamen() {
  * lista normal y por el diálogo de revisión final -- mismo aspecto, distinto
  * qué pasa al hacer clic. */
 function filaItem(item, indice, alHacerClic) {
+  const titulo = el("strong", { texto: TITULOS_TIPO[item.tipo] ?? item.tipo });
+  const color = colorDeMateria(item.materia);
+  if (color) {
+    const insignia = el("span", { clase: "badge-materia", texto: item.materia });
+    insignia.style.background = color;
+    titulo.append(" ", insignia);
+  }
   const fila = el(
     "li",
     { clase: "fila-item" },
     el("span", { clase: "orden-item", texto: String(indice + 1) }),
-    el(
-      "div",
-      { clase: "resumen-item" },
-      el("strong", { texto: TITULOS_TIPO[item.tipo] ?? item.tipo }),
-      el("p", { texto: item.enunciado }),
-    ),
+    el("div", { clase: "resumen-item" }, titulo, el("p", { texto: item.enunciado })),
     el("span", { clase: "tenue", texto: `${item.puntos} pts` }),
   );
   fila.addEventListener("click", alHacerClic);
@@ -299,6 +302,7 @@ function configurarItems() {
   });
 
   $("item-tipo").addEventListener("change", actualizarCamposSegunTipo);
+  $("item-medio-archivo").addEventListener("change", subirMedioArchivo);
 
   $("boton-cancelar-item").addEventListener("click", () => $("dialogo-item").close());
 
@@ -321,6 +325,65 @@ function configurarItems() {
       $("mensaje-item").hidden = false;
     }
   });
+}
+
+/**
+ * Sube una imagen/video propio a Storage para el "Medio" de la pregunta
+ * (2026-11-03) -- antes solo se podía pegar un link externo. La URL de
+ * descarga que devuelve Storage se guarda en el MISMO campo item-medio-url
+ * que ya existía, así que reproductor.js no necesita saber de dónde salió
+ * el archivo, lo trata igual que cualquier otro link.
+ */
+async function subirMedioArchivo() {
+  const campo = $("item-medio-archivo");
+  const archivo = campo.files?.[0];
+  if (!archivo) return;
+
+  const error = $("item-medio-error");
+  error.hidden = true;
+
+  if (!estado.seleccionado) {
+    error.textContent = "Primero guarda los datos del examen (código, nombre) antes de subir un archivo.";
+    error.hidden = false;
+    campo.value = "";
+    return;
+  }
+
+  const MAX_BYTES = 20 * 1024 * 1024; // mismo tope que nube/storage.rules
+  if (archivo.size > MAX_BYTES) {
+    error.textContent = "El archivo pesa demasiado (máximo 20 MB).";
+    error.hidden = false;
+    campo.value = "";
+    return;
+  }
+  const esImagen = archivo.type.startsWith("image/");
+  const esVideo = archivo.type.startsWith("video/");
+  if (!esImagen && !esVideo) {
+    error.textContent = "Solo se aceptan imágenes o videos.";
+    error.hidden = false;
+    campo.value = "";
+    return;
+  }
+
+  const { storage, fst } = estado.n;
+  $("item-medio-subiendo").hidden = false;
+  try {
+    // Prefijo aleatorio: dos docentes subiendo "foto.jpg" el mismo día no
+    // deben pisarse el archivo uno al otro.
+    const nombre = `${crypto.randomUUID()}-${archivo.name}`.slice(0, 200);
+    const ref = fst.ref(storage, `examenes/${estado.seleccionado}/medios/${nombre}`);
+    await fst.uploadBytes(ref, archivo, { contentType: archivo.type });
+    const url = await fst.getDownloadURL(ref);
+    $("item-medio-tipo").value = esImagen ? "imagen" : "video";
+    $("item-medio-url").value = url;
+  } catch (err) {
+    console.error("[autoria] no se pudo subir el archivo:", err);
+    error.textContent = "No se pudo subir el archivo. Intenta de nuevo.";
+    error.hidden = false;
+  } finally {
+    $("item-medio-subiendo").hidden = true;
+    campo.value = "";
+  }
 }
 
 // --------------------------------------------------------- generar con IA
@@ -421,6 +484,7 @@ async function abrirDialogoItem(item, borrador) {
 
   if (item) {
     $("item-tipo").value = item.tipo;
+    $("item-materia").value = item.materia ?? "";
     $("item-enunciado").value = item.enunciado ?? "";
     $("item-medio-tipo").value = item.medio?.tipo ?? "";
     $("item-medio-url").value = item.medio?.url ?? "";
@@ -487,9 +551,11 @@ async function guardarItem() {
     ? estado.items.find((i) => i.id === itemId)?.orden ?? estado.items.length
     : estado.items.length;
 
+  const materia = $("item-materia").value.trim();
   const datosItem = { orden, tipo, enunciado, puntos, actualizadoPor: estado.correo };
   if (medio) datosItem.medio = medio;
   if (opciones) datosItem.opciones = opciones;
+  if (materia) datosItem.materia = materia;
 
   try {
     await fs.setDoc(fs.doc(db, "examenes", estado.seleccionado, "items", itemId), datosItem);
