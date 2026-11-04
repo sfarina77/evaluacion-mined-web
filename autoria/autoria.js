@@ -1,7 +1,7 @@
 import { nube, nubeConfigurada } from "../src/nube/nube.js";
 import { colorDeMateria, agruparPorMateria } from "../src/colorMateria.js";
 import { tipoMedioDesdeMime } from "../src/examen/medios.js";
-import { calcularRestantes, crearIlustracionSvg } from "../src/examen/ilustraciones.js";
+import { calcularRestantes, crearIlustracionSvg, OBJETOS_DISPONIBLES, TITULOS_OBJETO } from "../src/examen/ilustraciones.js";
 
 /**
  * Autoría de exámenes (evaluacionsv.com/autoria): un docente crea un examen
@@ -347,7 +347,26 @@ function pintarRevision() {
   );
 }
 
+/** Opciones del selector "Dibujo" del problema ilustrado, generadas desde
+ * ilustraciones.js (2026-11-04, "mucha más variedad") -- una sola fuente de
+ * verdad en vez de repetir la lista a mano acá, para que agregar un dibujo
+ * nuevo ahí no obligue a tocar también el HTML. Orden alfabético por nombre:
+ * con más de 20 opciones, buscar por orden alfabético es más rápido que
+ * adivinar en qué orden las puse.
+ */
+function poblarSelectorIlustracion() {
+  const opciones = [...OBJETOS_DISPONIBLES].sort((a, b) => TITULOS_OBJETO[a].localeCompare(TITULOS_OBJETO[b]));
+  $("item-ilustracion-objeto").replaceChildren(
+    ...opciones.map((clave) => {
+      const opcion = el("option", { texto: TITULOS_OBJETO[clave] });
+      opcion.value = clave;
+      return opcion;
+    }),
+  );
+}
+
 function configurarItems() {
+  poblarSelectorIlustracion();
   $("boton-agregar-item").addEventListener("click", () => {
     if (!estado.seleccionado) {
       window.alert("Primero guarda los datos del examen (código, nombre) antes de agregar preguntas.");

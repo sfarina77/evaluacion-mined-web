@@ -106,14 +106,14 @@ textarea {
    ve un estudiante -- pensada para que un niño la reconozca y un adulto
    (madre, padre, docente) no la sienta infantil de más. */
 .mascota {
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
 }
 
 .mascota-grande {
   display: block;
-  width: 64px;
-  height: 64px;
+  width: 84px;
+  height: 84px;
   margin: 0 auto 10px;
 }
 
