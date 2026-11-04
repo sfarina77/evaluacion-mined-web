@@ -114,10 +114,25 @@
             <label>Preguntas requeridas (en blanco = todas)
               <input id="campo-preguntas-requeridas" type="number" min="1" placeholder="Ej: 10" />
             </label>
+            <label>Cómo se identifican tus estudiantes
+              <select id="campo-identificacion">
+                <option value="nie">NIE / DUI (como hoy)</option>
+                <option value="numero_lista">Número de lista (para niños pequeños)</option>
+              </select>
+            </label>
           </div>
           <p class="tenue">Si cargas más preguntas que las requeridas, las que sobran quedan de repuesto: si un estudiante sale del examen (advertencia de evasión) mientras está en una pregunta sin responder, esa pregunta se cambia por otra del repuesto.</p>
-          <p class="tenue">El estudiante solo necesita este código y su NIE/DUI para entrar -- colegio, grado,
-            sección y docentes quedan configurados acá, una sola vez.</p>
+
+          <div id="campo-lista-estudiantes" class="campo-medio" hidden>
+            <label>Lista de estudiantes (uno por línea: número - nombre)
+              <textarea id="lista-estudiantes-texto" rows="5" placeholder="1 - Juan Pérez&#10;2 - Ana López&#10;3 - Pedro Ruiz"></textarea>
+            </label>
+            <p class="tenue">A cada número le toca un color solo (no hace falta elegirlo) -- dile a cada estudiante su número junto con el color que le toca, así.</p>
+            <div id="vista-previa-lista" class="vista-previa-lista"></div>
+          </div>
+
+          <p class="tenue">El estudiante necesita este código y, según lo de arriba, su NIE/DUI o el número que le
+            diste -- colegio, grado, sección y docentes quedan configurados acá, una sola vez.</p>
           <button type="submit" class="boton boton-primario">Guardar examen</button>
           <p id="mensaje-examen" class="tenue" hidden></p>
         </form>

@@ -2,6 +2,7 @@ import { obtener as obtenerExamenes, normalizarUrlExamen } from "./examenConfig.
 import { nieValido } from "../sesion/nie.js";
 import { pantallaExtendida } from "../examen/entorno.js";
 import { nube, nubeConfigurada } from "../nube/nube.js";
+import { colorDeNumero, nombreDeColor, buscarEnLista } from "../examen/listaEstudiantes.js";
 
 // Examen de prueba embebido, igual que EXAMENES_LOCALES en el cliente Windows
 // y en LoginActivity de Android: permite probar el flujo completo sin
@@ -28,10 +29,19 @@ export function inicializarLogin({ onIniciar }) {
   const vista = document.getElementById("vista-login");
   const campoNie = document.getElementById("campo-nie");
   const campoCodigo = document.getElementById("campo-codigo");
+  const bloqueNumeroLista = document.getElementById("bloque-numero-lista");
+  const campoNumeroLista = document.getElementById("campo-numero-lista");
+  const confirmacionEstudiante = document.getElementById("confirmacion-estudiante");
   const campoConsentimiento = document.getElementById("campo-consentimiento");
   const mensajeError = document.getElementById("mensaje-error");
   const botonIniciar = document.getElementById("boton-iniciar");
   const botonCancelar = document.getElementById("boton-cancelar");
+
+  // Examen ya resuelto para el código que hay escrito ahora mismo (o null
+  // mientras no se reconoce ninguno) -- se guarda para no tener que volver a
+  // consultar Firestore al tocar "Iniciar Evaluación", y porque decide qué
+  // campo de identificación mostrar (ver actualizarModoIdentificacion).
+  let examenReconocido = null;
 
   function mostrarError(texto) {
     mensajeError.textContent = texto;
@@ -44,23 +54,76 @@ export function inicializarLogin({ onIniciar }) {
   botonCancelar.addEventListener("click", () => {
     campoNie.value = "";
     campoCodigo.value = "";
+    campoNumeroLista.value = "";
     campoConsentimiento.checked = false;
     ocultarError();
   });
 
-  botonIniciar.addEventListener("click", async () => {
-    ocultarError();
-    const nie = campoNie.value.trim();
+  /**
+   * Número de lista (2026-11-04): en vez del NIE, para niños que todavía no
+   * lo saben de memoria -- el docente carga número->nombre en el examen (ver
+   * autoria/index.html) y esto reconoce el modo apenas el código coincide
+   * con un examen así, SIN esperar a que toquen "Iniciar Evaluación" (igual
+   * que antes solo pasaba al enviar). El color es la segunda confirmación:
+   * si puso el número de otro compañero, va a ver un nombre y un color que
+   * no son los que le dijeron.
+   */
+  async function actualizarModoIdentificacion() {
     const codigo = campoCodigo.value.trim().toUpperCase();
+    examenReconocido = codigo ? await buscarExamenDeAutoria(codigo) : null;
+    const esNumeroLista = examenReconocido?.identificacion === "numero_lista";
+    campoNie.hidden = esNumeroLista;
+    bloqueNumeroLista.hidden = !esNumeroLista;
+    if (esNumeroLista) actualizarConfirmacionEstudiante();
+  }
 
-    if (!nieValido(nie)) {
-      mostrarError("NIE con formato inválido");
+  function actualizarConfirmacionEstudiante() {
+    const estudiante = buscarEnLista(examenReconocido?.lista_estudiantes, campoNumeroLista.value);
+    if (!estudiante) {
+      confirmacionEstudiante.hidden = true;
       return;
     }
+    const color = colorDeNumero(estudiante.numero);
+    const punto = document.createElement("span");
+    punto.className = "punto-color";
+    punto.style.background = color;
+    confirmacionEstudiante.replaceChildren(punto, document.createTextNode(`¿Eres tú, ${estudiante.nombre}? ${nombreDeColor(color)}`));
+    confirmacionEstudiante.hidden = false;
+  }
+
+  campoCodigo.addEventListener("blur", actualizarModoIdentificacion);
+  campoNumeroLista.addEventListener("input", actualizarConfirmacionEstudiante);
+
+  botonIniciar.addEventListener("click", async () => {
+    ocultarError();
+    // El blur de campoCodigo ya debería haber corrido, pero si el estudiante
+    // nunca le quitó el foco (p. ej. tocó "Iniciar" directo desde el
+    // teclado), hay que asegurarse de tener el examen reconocido ANTES de
+    // decidir qué campo de identificación exigir.
+    await actualizarModoIdentificacion();
+
+    const codigo = campoCodigo.value.trim().toUpperCase();
     if (!codigo) {
       mostrarError("Ese código de examen no existe");
       return;
     }
+
+    let nie;
+    if (examenReconocido?.identificacion === "numero_lista") {
+      const estudiante = buscarEnLista(examenReconocido.lista_estudiantes, campoNumeroLista.value);
+      if (!estudiante) {
+        mostrarError("Ese número no está en la lista. Pregúntale a tu docente.");
+        return;
+      }
+      nie = String(estudiante.numero);
+    } else {
+      nie = campoNie.value.trim();
+      if (!nieValido(nie)) {
+        mostrarError("NIE con formato inválido");
+        return;
+      }
+    }
+
     if (!campoConsentimiento.checked) {
       mostrarError("Para rendir el examen tienes que aceptar el uso de la cámara");
       return;
@@ -79,10 +142,9 @@ export function inicializarLogin({ onIniciar }) {
       // nube configurada) y solo si no existe se sigue con el camino de
       // siempre (red -> caché -> local). Así un código de GitHub sigue
       // funcionando exactamente igual que hoy; esto es pura adición.
-      const infoAutoria = await buscarExamenDeAutoria(codigo);
-      if (infoAutoria) {
+      if (examenReconocido) {
         vista.hidden = true;
-        onIniciar({ examenId: codigo, nie, info: infoAutoria });
+        onIniciar({ examenId: codigo, nie, info: examenReconocido });
         return;
       }
 
@@ -128,6 +190,9 @@ async function buscarExamenDeAutoria(codigo) {
       pin_salida: datos.pin_salida ?? "0000",
       clave_reingreso: datos.clave_reingreso ?? "1111",
       advertencias_evasion: datos.advertencias_evasion,
+      // Número de lista (2026-11-04): ver actualizarModoIdentificacion arriba.
+      identificacion: datos.identificacion ?? "nie",
+      lista_estudiantes: datos.lista_estudiantes ?? [],
     };
   } catch (error) {
     console.error("[login] no se pudo consultar Firestore para el examen de autoría:", error);

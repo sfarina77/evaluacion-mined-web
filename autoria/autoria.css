@@ -160,6 +160,22 @@
   border-radius: 8px;
 }
 
+/* Lista de estudiantes por número (2026-11-04) -- ver
+   src/examen/listaEstudiantes.js. */
+.vista-previa-lista {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.fila-lista-estudiante {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
 /* ------------------------------------------------ biblioteca de contenidos */
 
 .biblioteca-contenidos {

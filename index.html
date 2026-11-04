@@ -37,8 +37,17 @@
       </svg>
       <h1>SISTEMA DE EVALUACIÓN SEGURO</h1>
       <p class="subtitulo">Identifícate y escribe el código de la prueba asignado por tu docente.</p>
-      <input id="campo-nie" type="text" placeholder="NIE del estudiante" autocomplete="username" />
       <input id="campo-codigo" type="text" placeholder="Código del Examen (Ej: EXAM101)" />
+      <input id="campo-nie" type="text" placeholder="NIE del estudiante" autocomplete="username" />
+      <!-- Número de lista (2026-11-04): para niños que todavía no saben su
+           NIE/DUI, el docente carga número->nombre en el examen (ver
+           autoria/index.html) y esto reemplaza el campo de arriba -- se
+           decide solo, según examenes/{codigo}.identificacion, apenas se
+           reconoce el código (ver src/login/loginVista.js). -->
+      <div id="bloque-numero-lista" hidden>
+        <input id="campo-numero-lista" type="number" inputmode="numeric" placeholder="Tu número" />
+        <p id="confirmacion-estudiante" class="confirmacion-estudiante" hidden></p>
+      </div>
       <!-- Consentimiento antes de encender la cámara (estudiantes menores de
            edad). Tiene que decir exactamente lo que se captura y quién lo ve:
            si cambia src/sesion/reporteEnVivo.js o DIAS_RETENCION, cambia esto. -->

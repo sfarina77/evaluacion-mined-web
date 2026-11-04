@@ -2,6 +2,7 @@ import { nube, nubeConfigurada } from "../src/nube/nube.js";
 import { colorDeMateria, agruparPorMateria } from "../src/colorMateria.js";
 import { tipoMedioDesdeMime } from "../src/examen/medios.js";
 import { calcularRestantes, crearIlustracionSvg, OBJETOS_DISPONIBLES, TITULOS_OBJETO } from "../src/examen/ilustraciones.js";
+import { colorDeNumero, nombreDeColor, interpretarListaTexto, listaATexto } from "../src/examen/listaEstudiantes.js";
 
 /**
  * Autoría de exámenes (evaluacionsv.com/autoria): un docente crea un examen
@@ -158,9 +159,32 @@ $("boton-nuevo-examen").addEventListener("click", () => {
   $("titulo-examen").textContent = "Nuevo examen";
   $("form-examen").reset();
   $("campo-codigo").disabled = false;
+  actualizarCampoListaEstudiantes();
   pintarItems();
   pintarExamenes();
 });
+
+/** Muestra/oculta la lista de estudiantes según el modo de identificación
+ * elegido, y repinta la vista previa (número + color + nombre) cada vez que
+ * el docente cambia el texto -- mismo criterio que la vista previa del
+ * problema ilustrado: ver EXACTAMENTE lo que va a ver el estudiante antes de
+ * guardarlo. */
+function actualizarCampoListaEstudiantes() {
+  const esNumeroLista = $("campo-identificacion").value === "numero_lista";
+  $("campo-lista-estudiantes").hidden = !esNumeroLista;
+  if (esNumeroLista) pintarVistaPreviaLista();
+}
+
+function pintarVistaPreviaLista() {
+  const lista = interpretarListaTexto($("lista-estudiantes-texto").value);
+  $("vista-previa-lista").replaceChildren(
+    ...lista.map((entrada) => {
+      const insignia = el("span", { clase: "badge-materia", texto: nombreDeColor(colorDeNumero(entrada.numero)) });
+      insignia.style.background = colorDeNumero(entrada.numero);
+      return el("p", { clase: "fila-lista-estudiante" }, el("strong", { texto: `${entrada.numero}. ` }), el("span", { texto: entrada.nombre }), insignia);
+    }),
+  );
+}
 
 function seleccionar(codigo) {
   const { db, fs } = estado.n;
@@ -180,6 +204,9 @@ function seleccionar(codigo) {
   $("campo-advertencias").value = datos.advertencias_evasion ?? "";
   $("campo-tamano-texto").value = datos.tamano_texto ?? "normal";
   $("campo-preguntas-requeridas").value = datos.preguntas_requeridas ?? "";
+  $("campo-identificacion").value = datos.identificacion ?? "nie";
+  $("lista-estudiantes-texto").value = listaATexto(datos.lista_estudiantes);
+  actualizarCampoListaEstudiantes();
   pintarExamenes();
 
   estado.desuscribirItems?.();
@@ -193,6 +220,8 @@ function seleccionar(codigo) {
 // --------------------------------------------------------------- examen
 
 function configurarFormularioExamen() {
+  $("campo-identificacion").addEventListener("change", actualizarCampoListaEstudiantes);
+  $("lista-estudiantes-texto").addEventListener("input", pintarVistaPreviaLista);
   $("form-examen").addEventListener("submit", async (evento) => {
     evento.preventDefault();
     const { db, fs } = estado.n;
@@ -222,6 +251,12 @@ function configurarFormularioExamen() {
     };
     const preguntasRequeridas = Number($("campo-preguntas-requeridas").value);
     if (preguntasRequeridas > 0) datos.preguntas_requeridas = preguntasRequeridas;
+
+    const identificacion = $("campo-identificacion").value || "nie";
+    datos.identificacion = identificacion;
+    if (identificacion === "numero_lista") {
+      datos.lista_estudiantes = interpretarListaTexto($("lista-estudiantes-texto").value);
+    }
 
     try {
       const existente = estado.examenes.get(codigo);
