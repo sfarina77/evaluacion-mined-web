@@ -110,7 +110,11 @@
                 <option value="grande">Grande (para primero/segundo grado)</option>
               </select>
             </label>
+            <label>Preguntas requeridas (en blanco = todas)
+              <input id="campo-preguntas-requeridas" type="number" min="1" placeholder="Ej: 10" />
+            </label>
           </div>
+          <p class="tenue">Si cargas más preguntas que las requeridas, las que sobran quedan de repuesto: si un estudiante sale del examen (advertencia de evasión) mientras está en una pregunta sin responder, esa pregunta se cambia por otra del repuesto.</p>
           <p class="tenue">El estudiante solo necesita este código y su NIE/DUI para entrar -- colegio, grado,
             sección y docentes quedan configurados acá, una sola vez.</p>
           <button type="submit" class="boton boton-primario">Guardar examen</button>

@@ -179,6 +179,7 @@ function seleccionar(codigo) {
   $("campo-clave").value = datos.clave_reingreso ?? "";
   $("campo-advertencias").value = datos.advertencias_evasion ?? "";
   $("campo-tamano-texto").value = datos.tamano_texto ?? "normal";
+  $("campo-preguntas-requeridas").value = datos.preguntas_requeridas ?? "";
   pintarExamenes();
 
   estado.desuscribirItems?.();
@@ -219,6 +220,8 @@ function configurarFormularioExamen() {
       // nube/firestore.rules exige que coincida con el correo de quien firma.
       actualizadoPor: estado.correo,
     };
+    const preguntasRequeridas = Number($("campo-preguntas-requeridas").value);
+    if (preguntasRequeridas > 0) datos.preguntas_requeridas = preguntasRequeridas;
 
     try {
       const existente = estado.examenes.get(codigo);

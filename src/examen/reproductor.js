@@ -17,8 +17,9 @@ import { crearIlustracionSvg } from "./ilustraciones.js";
  * que es quien puede leer la clave real sin exponérsela al navegador. Ver
  * nube/firestore.rules para el porqué de esa separación.
  */
-export function crearReproductor({ contenedor, examenId, nie, sesionId }) {
-  let items = [];
+export function crearReproductor({ contenedor, examenId, nie, sesionId, onTerminado }) {
+  let items = []; // la secuencia ACTIVA (lo que el estudiante rinde), no todo el banco
+  let reserva = []; // preguntas de más (si las hay) para reemplazar una tras una evasión
   let indice = 0;
   let n = null;
   const t0 = Date.now() / 1000;
@@ -30,7 +31,17 @@ export function crearReproductor({ contenedor, examenId, nie, sesionId }) {
       fs.getDocs(fs.query(fs.collection(db, "examenes", examenId, "items"), fs.orderBy("orden"))),
       fs.getDoc(fs.doc(db, "examenes", examenId)),
     ]);
-    items = foto.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const todas = foto.docs.map((d) => ({ id: d.id, ...d.data() }));
+    // Banco de repuesto (2026-11-04, pedido explícito): si el docente cargó
+    // más preguntas que las requeridas, las que sobran NO se muestran de
+    // entrada -- quedan en reserva para cuando el estudiante salga del
+    // examen a mitad de una pregunta (ver notificarEvasion). Sin
+    // preguntas_requeridas (o con el mismo total de preguntas que hay), no
+    // hay reserva y esto se comporta exactamente igual que antes.
+    const requeridas = examen.data()?.preguntas_requeridas;
+    const corte = Number.isFinite(requeridas) && requeridas > 0 ? Math.min(requeridas, todas.length) : todas.length;
+    items = todas.slice(0, corte);
+    reserva = todas.slice(corte);
     // Texto grande (2026-11-03, exámenes de lectura de primero/segundo
     // grado): una sola clase en el contenedor, el resto lo resuelve
     // estilos.css (.reproductor-grande ...).
@@ -40,6 +51,22 @@ export function crearReproductor({ contenedor, examenId, nie, sesionId }) {
       contenedor.replaceChildren(el("p", { clase: "tenue", texto: "Este examen todavía no tiene preguntas." }));
       return;
     }
+    render();
+  }
+
+  /**
+   * Llamado desde examenControlador.js cada vez que se registra una salida
+   * del examen (cambio de pestaña, fuera de pantalla completa, etc.) --
+   * pedido explícito (2026-11-04): con varias advertencias disponibles, un
+   * estudiante podía salir a buscar la respuesta de LA PREGUNTA QUE TENÍA
+   * ABIERTA y volver a escribirla. Si todavía no la contestó y queda algo en
+   * la reserva, esa pregunta se cambia por otra -- lo que haya ido a buscar
+   * ya no sirve. Sin reserva (el docente no cargó preguntas de más), no hay
+   * nada que cambiar y esto no hace nada.
+   */
+  function notificarEvasion() {
+    if (indice >= items.length || !reserva.length) return;
+    items[indice] = reserva.shift();
     render();
   }
 
@@ -55,6 +82,11 @@ export function crearReproductor({ contenedor, examenId, nie, sesionId }) {
     const item = items[indice];
     const cuerpo = el("div", { clase: "reproductor-pregunta" });
     cuerpo.append(el("p", { clase: "reproductor-progreso", texto: `Pregunta ${indice + 1} de ${items.length}` }));
+    // Barra de progreso visual (2026-11-04, pedido explícito de "algo más
+    // didáctico") -- un vistazo rápido en vez de solo leer el número.
+    const relleno = el("div", { clase: "reproductor-progreso-relleno" });
+    relleno.style.width = `${Math.round(((indice + 1) / items.length) * 100)}%`;
+    cuerpo.append(el("div", { clase: "reproductor-progreso-barra" }, relleno));
     const color = colorDeMateria(item.materia);
     if (color) {
       const insignia = el("span", { clase: "badge-materia", texto: item.materia });
@@ -71,7 +103,7 @@ export function crearReproductor({ contenedor, examenId, nie, sesionId }) {
     cuerpo.append(campoRespuesta);
 
     const botonSiguiente = el("button", {
-      clase: "boton boton-primario",
+      clase: "boton boton-primario reproductor-boton-siguiente",
       texto: indice === items.length - 1 ? "Terminar" : "Siguiente",
     });
     botonSiguiente.type = "button";
@@ -280,10 +312,26 @@ export function crearReproductor({ contenedor, examenId, nie, sesionId }) {
   }
 
   function terminar() {
+    // Antes esto solo decía "puedes cerrar esta ventana" y no hacía nada
+    // más -- mientras el estudiante no cerraba la pestaña a mano, la
+    // supervisión (cámara, pantalla completa, foco) seguía corriendo de
+    // fondo y podía marcarle una evasión por algo que hizo DESPUÉS de
+    // terminar (2026-11-04, reportado directamente). El botón llama a
+    // onTerminado (examenControlador.js::terminarExamen), que sí apaga la
+    // cámara, sale de pantalla completa y cierra la sesión como "terminado".
+    const botonFinalizar = el("button", { clase: "boton boton-primario reproductor-boton-siguiente", texto: "Finalizar examen ✓" });
+    botonFinalizar.type = "button";
+    botonFinalizar.addEventListener("click", () => onTerminado?.());
     contenedor.replaceChildren(
-      el("div", { clase: "reproductor-fin" }, el("h2", { texto: "Terminaste el examen" }), el("p", { clase: "tenue", texto: "Puedes cerrar esta ventana o esperar a que tu docente lo indique." })),
+      el(
+        "div",
+        { clase: "reproductor-fin" },
+        el("h2", { texto: "Terminaste el examen" }),
+        el("p", { clase: "tenue", texto: "Toca el botón para entregarlo y apagar la supervisión." }),
+        botonFinalizar,
+      ),
     );
   }
 
-  return { iniciar };
+  return { iniciar, notificarEvasion };
 }

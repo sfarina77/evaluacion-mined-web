@@ -71,6 +71,10 @@ export function iniciarExamen({ examenId, nie, info }) {
   // como evasión -- mismo guard que `saliendoControladamente` en Android.
   let saliendoControladamente = false;
   let detector = null;
+  // Instancia del reproductor nativo (solo en modo autoría) -- se guarda
+  // acá para que reportarEvasion() pueda avisarle que cambie la pregunta
+  // actual por una de repuesto (ver notificarEvasion en reproductor.js).
+  let reproductor = null;
   // Un mismo cambio de pestaña dispara visibilitychange + fullscreenchange
   // (+ pérdida de foco): mientras siga tapado el examen (advertencia o
   // reingreso), es una sola salida y una sola alerta.
@@ -120,6 +124,7 @@ export function iniciarExamen({ examenId, nie, info }) {
   configurarGatilloSalida();
   configurarDetectorEvasion();
   configurarSalidaDeNavegador();
+  configurarBloqueoDeCopiado();
 
   crearDetector({ onFrame: onFrameDetectado })
     .then(async (d) => {
@@ -143,12 +148,19 @@ export function iniciarExamen({ examenId, nie, info }) {
           contenedorReproductor.textContent =
             "Este examen necesita conexión a la nube y todavía no está disponible. Avisa a tu docente.";
         } else {
-          crearReproductor({
+          reproductor = crearReproductor({
             contenedor: contenedorReproductor,
             examenId,
             nie,
             sesionId: reporte.sesionId,
-          })
+            // Botón "Finalizar examen" del reproductor (2026-11-04): antes
+            // terminar() solo mostraba un mensaje y dejaba la cámara/pantalla
+            // completa/sondeo de evasión corriendo de fondo -- si el
+            // estudiante no cerraba la pestaña a mano, podía acabar con una
+            // alerta por algo que hizo DESPUÉS de entregar el examen.
+            onTerminado: terminarExamen,
+          });
+          reproductor
             .iniciar()
             .catch((error) => {
               console.error("[examen] no se pudo cargar el reproductor:", error);
@@ -266,6 +278,10 @@ export function iniciarExamen({ examenId, nie, info }) {
     if (saliendoControladamente || bloqueadoPorEvasion) return;
     console.warn("[evasión]", motivo, { t: Math.round(t()), vigilando: vigilando() });
     salidas += 1;
+    // Banco de repuesto (2026-11-04): si salió es porque pudo haber ido a
+    // buscar la respuesta de la pregunta que tenía abierta -- se la cambia,
+    // sin reserva disponible esto no hace nada (ver reproductor.js).
+    reproductor?.notificarEvasion?.();
     if (salidas <= maxAdvertencias) {
       advertencias.push({ t: t(), motivo });
       reporte.evento("advertencia", {
@@ -357,6 +373,22 @@ export function iniciarExamen({ examenId, nie, info }) {
   campoReingreso.addEventListener("keydown", (evento) => {
     if (evento.key === "Enter") botonReingreso.click();
   });
+
+  /**
+   * Copiar el enunciado y pegarlo en un chat de IA (y la respuesta de
+   * vuelta) es una forma de evasión tan real como cambiar de pestaña, pedida
+   * explícitamente (2026-11-04) -- se bloquea copiar/cortar/pegar y el menú
+   * contextual (clic derecho) dentro de la pantalla de examen, más
+   * `user-select: none` en CSS como primera barrera (ver estilos.css). No es
+   * perfecto (las herramientas de desarrollador del navegador igual pueden
+   * leer el DOM -- nada en el navegador lo es, mismo principio que el resto
+   * de este archivo), pero sí para el camino fácil de seleccionar y copiar.
+   */
+  function configurarBloqueoDeCopiado() {
+    for (const tipo of ["copy", "cut", "paste", "contextmenu"]) {
+      vista.addEventListener(tipo, (evento) => evento.preventDefault());
+    }
+  }
 
   /** No se puede impedir que cierren la pestaña (ninguna API web lo permite),
    * pero sí avisar -- y si vuelven a entrar, el estado ANULADO ya va a estar

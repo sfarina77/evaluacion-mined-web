@@ -181,7 +181,12 @@ function seleccionar(codigo) {
       estado.sesiones = foto.docs.map((d) => ({ id: d.id, ...d.data({ serverTimestamps: "estimate" }) }));
       pintarSesiones();
     },
-    (error) => console.error("sesiones:", error),
+    (error) => {
+      console.error("sesiones:", error);
+      $("filas-sesiones").replaceChildren(
+        el("tr", {}, el("td", { clase: "mensaje-error", texto: "No se pudo cargar. Revisa la consola del navegador (F12) o avisa al encargado técnico." })),
+      );
+    },
   );
 
   // Plataforma de autoría (2026-11-03): respuestas que la función en la nube
@@ -369,7 +374,16 @@ function abrirSesion(sesionId) {
   estado.desuscribirEventos = fs.onSnapshot(
     consulta,
     (foto) => pintarEventos(foto.docs.map((d) => d.data({ serverTimestamps: "estimate" }))),
-    (error) => console.error("eventos:", error),
+    (error) => {
+      // Antes esto solo quedaba en la consola del navegador -- "Cargando…"
+      // se quedaba así para siempre sin que el docente supiera que algo
+      // falló (reportado 2026-11-04). Si la consola del navegador (F12)
+      // muestra un enlace para crear un índice, ese es el motivo más común.
+      console.error("eventos:", error);
+      $("linea-tiempo").replaceChildren(
+        el("li", { clase: "mensaje-error", texto: "No se pudo cargar. Revisa la consola del navegador (F12) o avisa al encargado técnico." }),
+      );
+    },
   );
 }
 
