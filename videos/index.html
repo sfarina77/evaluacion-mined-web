@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="es-SV">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex" />
+<title>Evaluación MINED — video explicativo</title>
+<link rel="icon" type="image/png" sizes="32x32" href="../public/icons/favicon-32.png" />
+<style>
+  :root {
+    --fondo: #f4f7ff;
+    --tarjeta: #ffffff;
+    --texto: #1f2a44;
+    --tenue: #5b6a8f;
+    --acento: #3b6df0;
+    --acento-2: #8b5cf6;
+    --calido: #ff8a5c;
+    --borde: #e3e8f7;
+    --ok: #1f9d55;
+    --aviso: #b8860b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --fondo: #10152a;
+      --tarjeta: #171d38;
+      --texto: #eef1ff;
+      --tenue: #9aa7d1;
+      --borde: #2a3358;
+    }
+  }
+  :root[data-theme="dark"] {
+    --fondo: #10152a;
+    --tarjeta: #171d38;
+    --texto: #eef1ff;
+    --tenue: #9aa7d1;
+    --borde: #2a3358;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--tarjeta);
+    border-bottom: 1px solid var(--borde);
+  }
+  header a.volver {
+    margin-left: auto;
+    color: var(--acento);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  header h1 { font-size: 17px; margin: 0; }
+  header p { margin: 2px 0 0; font-size: 13px; color: var(--tenue); }
+  .mascota { width: 34px; height: 34px; flex: none; }
+  .envoltura {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 18px 16px 60px;
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 760px) {
+    .envoltura { grid-template-columns: 1fr; }
+    header a.volver { display: none; }
+  }
+  .capitulos {
+    background: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    padding: 10px;
+    height: fit-content;
+    position: sticky;
+    top: 16px;
+  }
+  .capitulos button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    color: var(--texto);
+    padding: 10px 10px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    cursor: pointer;
+    margin-bottom: 2px;
+  }
+  .capitulos button .num {
+    display: inline-block;
+    width: 20px;
+    color: var(--tenue);
+    font-weight: 700;
+  }
+  .capitulos button[aria-current="true"] {
+    background: linear-gradient(135deg, var(--acento), var(--acento-2));
+    color: #fff;
+  }
+  .capitulos button[aria-current="true"] .num { color: #fff; }
+  .principal { min-width: 0; }
+  .marco-video {
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(20, 30, 70, 0.18);
+  }
+  video { display: block; width: 100%; aspect-ratio: 16 / 10; background: #000; }
+  .etiqueta-tipo {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  .etiqueta-tipo.real { background: #1f9d55; color: #fff; }
+  .etiqueta-tipo.recreacion { background: #fbbf24; color: #4a3200; }
+  .titulo-escena { font-size: 19px; margin: 16px 0 4px; }
+  .subtitulo-escena { color: var(--tenue); font-size: 13px; margin: 0 0 12px; }
+  .subtitulos {
+    background: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 15.5px;
+    line-height: 1.55;
+  }
+  .controles {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .controles button {
+    border: 1px solid var(--borde);
+    background: var(--tarjeta);
+    color: var(--texto);
+    padding: 9px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+  .controles button.principal-boton {
+    background: linear-gradient(135deg, var(--acento), var(--acento-2));
+    color: #fff;
+    border: none;
+  }
+  .nota-exportar {
+    margin-top: 20px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #7c2d12;
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  :root[data-theme="dark"] .nota-exportar { background: #2b1d10; border-color: #7c4a1d; color: #fcd9b0; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .nota-exportar { background: #2b1d10; border-color: #7c4a1d; color: #fcd9b0; }
+  }
+  .progreso-global { display: flex; gap: 4px; margin-top: 14px; }
+  .progreso-global span { flex: 1; height: 4px; border-radius: 2px; background: var(--borde); }
+  .progreso-global span.hecho { background: var(--acento); }
+</style>
+</head>
+<body>
+
+<header>
+  <svg class="mascota" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b6df0" /><stop offset="1" stop-color="#8b5cf6" /></linearGradient></defs>
+    <path d="M15 38 C14 28 13 20 17 12 L23 12 C24 20 23 28 24 38 Z" fill="url(#g)" />
+    <ellipse cx="20" cy="9" rx="8.5" ry="7" fill="url(#g)" />
+    <ellipse cx="12.3" cy="7.5" rx="2.3" ry="3.1" fill="url(#g)" transform="rotate(-25 12.3 7.5)" />
+    <ellipse cx="27.7" cy="7.5" rx="2.3" ry="3.1" fill="url(#g)" transform="rotate(25 27.7 7.5)" />
+    <circle cx="16" cy="2.6" r="1.6" fill="#ff8a5c" /><circle cx="24" cy="2.6" r="1.6" fill="#ff8a5c" />
+    <ellipse cx="20" cy="13.5" rx="3.6" ry="2.1" fill="#fff" opacity="0.92" />
+    <circle cx="17.2" cy="9" r="1.2" fill="#1f2a44" /><circle cx="22.8" cy="9" r="1.2" fill="#1f2a44" />
+  </svg>
+  <div>
+    <h1>Evaluación MINED — recorrido narrado</h1>
+    <p>Cómo se crea un examen, cómo protege la supervisión, y cómo se ve la evaluación — 2° grado y 9° grado.</p>
+  </div>
+  <a class="volver" href="../">← Volver al inicio</a>
+</header>
+
+<div class="envoltura">
+  <nav class="capitulos" id="capitulos"></nav>
+
+  <main class="principal">
+    <div class="marco-video">
+      <video id="video" playsinline></video>
+      <span class="etiqueta-tipo" id="etiqueta-tipo"></span>
+    </div>
+    <div class="progreso-global" id="progreso-global"></div>
+    <h2 class="titulo-escena" id="titulo-escena"></h2>
+    <p class="subtitulo-escena" id="subtitulo-escena"></p>
+    <div class="subtitulos" id="subtitulos"></div>
+    <div class="controles">
+      <button type="button" id="boton-anterior">◀ Anterior</button>
+      <button type="button" id="boton-siguiente" class="principal-boton">Siguiente ▶</button>
+      <button type="button" id="boton-reproducir">Pausar</button>
+    </div>
+    <div class="nota-exportar" id="nota-exportar" hidden>
+      <strong>Pendiente:</strong> todavía no existe un botón para exportar estos resultados directamente a otros sistemas de evaluación del Ministerio. Por ahora la información vive en Evaluación MINED, y habría que llevarla a mano a otro sistema.
+    </div>
+  </main>
+</div>
+
+<script>
+  const ESCENAS = [
+    { id: "A", archivo: "clips/A_intro.webm", tipo: "real",
+      titulo: "Evaluación MINED, en recorrido", subtitulo: "Introducción",
+      texto: "Esta es Evaluación MINED: una plataforma de exámenes en línea con supervisión automática, pensada para los centros educativos de El Salvador. Vamos a ver cómo una docente crea un examen para niños de segundo grado, cómo lo rinde un estudiante, y cómo se ve la evaluación al final. Luego, el mismo recorrido para un examen de noveno grado." },
+    { id: "B", archivo: "clips/B_crear_2do.webm", tipo: "recreacion",
+      titulo: "La docente crea el examen de 2° grado", subtitulo: "Autoría · texto grande · número de lista · pregunta ilustrada",
+      texto: "Todo comienza en el panel de autoría, donde la docente inicia sesión con su cuenta institucional de Google y crea un nuevo examen. Como es para niños pequeños, activa el modo de texto e imágenes grandes. Como los niños de este grado todavía no se saben su documento de memoria, elige identificación por número de lista: escribe el nombre de cada estudiante y el sistema le asigna un número y un color, para que no se confundan entre ellos. Para los más pequeños puede usar preguntas ilustradas con dibujos: por ejemplo, cuántos patos quedan si tres se van volando." },
+    { id: "C", archivo: "clips/C_proctoring.webm", tipo: "real",
+      titulo: "Así protege la supervisión", subtitulo: "Cámara, pantalla completa y advertencias",
+      texto: "Antes de empezar, el examen pide permiso para usar la cámara y entra en pantalla completa. Mientras el estudiante responde, el sistema vigila en segundo plano: si sale de la pantalla completa, cambia de ventana, o intenta copiar y pegar, lo registra como una posible señal de evasión. Esa pregunta se cambia por otra del banco de reservas, así nadie puede salir a buscar la respuesta y volver." },
+    { id: "D", archivo: "clips/D_estudiante_2do.webm", tipo: "real",
+      titulo: "Un estudiante de 2° grado rinde el examen", subtitulo: "Número de lista · letra grande · preguntas ilustradas",
+      texto: "Así lo vive el estudiante. Escribe el código del examen, y como es un examen con número de lista, el sistema le pide su número en lugar del documento. Aparece su nombre y un color para que confirme que es él. Acepta el uso de la cámara, y comienza a responder: preguntas de lectura con letra grande, y preguntas ilustradas donde solo tiene que contar y escribir el número. Al terminar, toca el botón de Finalizar examen, ya no depende de cerrar la ventana por su cuenta." },
+    { id: "E", archivo: "clips/E_resultados_2do.webm", tipo: "recreacion",
+      titulo: "La docente ve los resultados de 2° grado", subtitulo: "Panel docente · calificación automática · revisión con IA",
+      texto: "La docente ve los resultados en el panel de seguimiento: la calificación automática, cuántas advertencias tuvo cada estudiante, y el detalle de cada respuesta. Las preguntas de opción múltiple y las ilustradas se califican solas; las de desarrollo quedan marcadas para que la docente las revise, con una sugerencia de calificación generada por inteligencia artificial, siempre como apoyo, nunca como decisión final." },
+    { id: "F", archivo: "clips/F_ia_noveno.webm", tipo: "recreacion",
+      titulo: "La IA ayuda a crear el examen de 9° grado", subtitulo: "Generador de preguntas con inteligencia artificial",
+      texto: "Para noveno grado, el proceso se apoya todavía más en inteligencia artificial. La docente pega el contenido del tema que quiere evaluar, y la IA genera un primer borrador de preguntas de matemática, lenguaje y ciencia, listas para que la docente las revise, edite o descarte antes de publicar el examen." },
+    { id: "G", archivo: "clips/G_estudiante_noveno.webm", tipo: "real",
+      titulo: "Un estudiante de 9° grado rinde el examen", subtitulo: "Materias por color · calculadora · advertencia de evasión",
+      texto: "El estudiante de noveno grado entra con su documento de identidad. Ve las preguntas organizadas por materia, cada una con un color distinto. En las de matemática puede abrir una calculadora integrada, básica, científica o graficadora. El sistema sigue protegiendo el examen: no se puede copiar ni pegar texto, ni en las preguntas ni en las respuestas. Si sale de la pantalla completa o cambia de aplicación, aparece una advertencia y esa pregunta se reemplaza por otra." },
+    { id: "H", archivo: "clips/H_resultados_cierre.webm", tipo: "recreacion",
+      titulo: "La docente ve los resultados de 9° grado", subtitulo: "Calificación por materia · bitácora · cierre", exportar: true,
+      texto: "Al final, la docente ve la evaluación completa de noveno grado: calificación por materia, bitácora de eventos de cada sesión, y las respuestas abiertas listas para revisar. Así es Evaluación MINED hoy: creación asistida por inteligencia artificial, identificación pensada incluso para los niños más pequeños, supervisión activa durante la prueba, y resultados centralizados para cada docente." },
+  ];
+
+  let indice = 0;
+  const video = document.getElementById("video");
+  const capitulos = document.getElementById("capitulos");
+  const progreso = document.getElementById("progreso-global");
+
+  capitulos.replaceChildren(
+    ...ESCENAS.map((e, i) => {
+      const boton = document.createElement("button");
+      boton.type = "button";
+      boton.innerHTML = `<span class="num">${i + 1}</span>${e.titulo}`;
+      boton.addEventListener("click", () => ir(i));
+      return boton;
+    })
+  );
+  progreso.replaceChildren(...ESCENAS.map(() => document.createElement("span")));
+
+  function ir(i) {
+    indice = (i + ESCENAS.length) % ESCENAS.length;
+    const e = ESCENAS[indice];
+    video.src = e.archivo;
+    video.play().catch(() => {});
+    document.getElementById("titulo-escena").textContent = e.titulo;
+    document.getElementById("subtitulo-escena").textContent = e.subtitulo;
+    document.getElementById("subtitulos").textContent = e.texto;
+    document.getElementById("nota-exportar").hidden = !e.exportar;
+    const etiqueta = document.getElementById("etiqueta-tipo");
+    etiqueta.textContent = e.tipo === "real" ? "En vivo · datos reales" : "Recreación de la interfaz";
+    etiqueta.className = "etiqueta-tipo " + e.tipo;
+    [...capitulos.children].forEach((b, idx) => b.setAttribute("aria-current", String(idx === indice)));
+    [...progreso.children].forEach((s, idx) => s.classList.toggle("hecho", idx <= indice));
+    document.getElementById("boton-reproducir").textContent = "Pausar";
+  }
+
+  video.addEventListener("ended", () => {
+    if (indice < ESCENAS.length - 1) ir(indice + 1);
+  });
+
+  document.getElementById("boton-anterior").addEventListener("click", () => ir(indice - 1));
+  document.getElementById("boton-siguiente").addEventListener("click", () => ir(indice + 1));
+  document.getElementById("boton-reproducir").addEventListener("click", (ev) => {
+    if (video.paused) { video.play(); ev.target.textContent = "Pausar"; }
+    else { video.pause(); ev.target.textContent = "Reproducir"; }
+  });
+
+  ir(0);
+</script>
+</body>
+</html>
