@@ -221,6 +221,38 @@
   resize: vertical;
 }
 
+.enlace-compartir {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.enlace-compartir label {
+  flex: 1;
+  min-width: 0;
+}
+
+.enlace-compartir input {
+  width: 100%;
+}
+
+.lista-docentes {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.fila-docente {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--borde);
+  font-size: 0.85rem;
+}
+
 .generador-controles {
   display: flex;
   align-items: center;

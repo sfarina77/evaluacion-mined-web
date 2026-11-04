@@ -94,6 +94,16 @@ export function inicializarLogin({ onIniciar }) {
   campoCodigo.addEventListener("blur", actualizarModoIdentificacion);
   campoNumeroLista.addEventListener("input", actualizarConfirmacionEstudiante);
 
+  // Link para compartir (2026-11-04): autoria/index.html y docente/index.html
+  // arman "https://.../?codigo=XXXX" -- con esto, abrir ese link ya deja el
+  // código listo, al estudiante solo le falta su NIE/número y aceptar la
+  // cámara. Sin esto el link no ahorraba nada sobre decirle el código de voz.
+  const codigoDesdeUrl = new URLSearchParams(location.search).get("codigo");
+  if (codigoDesdeUrl) {
+    campoCodigo.value = codigoDesdeUrl.trim().toUpperCase();
+    actualizarModoIdentificacion();
+  }
+
   botonIniciar.addEventListener("click", async () => {
     ocultarError();
     // El blur de campoCodigo ya debería haber corrido, pero si el estudiante

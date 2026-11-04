@@ -317,8 +317,36 @@ textarea {
 
 .claves {
   display: flex;
+  align-items: center;
   gap: 16px;
   font-size: 0.85rem;
+}
+
+.enlace-compartir-panel {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 10px 0 16px;
+}
+
+.enlace-compartir-panel label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--texto-secundario);
+}
+
+.enlace-compartir-panel input {
+  width: 100%;
+  padding: 6px 8px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  color: var(--texto);
+  font: inherit;
 }
 
 .claves > div {

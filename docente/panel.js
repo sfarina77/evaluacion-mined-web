@@ -112,9 +112,18 @@ async function entrar(usuario) {
   const consulta = admin
     ? fs.collection(db, "examenes")
     : fs.query(fs.collection(db, "examenes"), fs.where("docentes", "array-contains", correo));
+  // Interconexión de pantallas (2026-11-04): un link como
+  // docente/?codigo=EXAM202 (p. ej. desde el botón "Panel en vivo" de
+  // autoria/) selecciona ese examen solo, si es uno de los suyos.
+  const codigoDesdeUrl = new URLSearchParams(location.search).get("codigo")?.trim().toUpperCase();
+  let yaAbiertoDesdeUrl = false;
   estado.desuscribirExamenes = fs.onSnapshot(consulta, (foto) => {
     estado.examenes = new Map(foto.docs.map((d) => [d.id, d.data()]));
     pintarExamenes();
+    if (codigoDesdeUrl && !yaAbiertoDesdeUrl && estado.examenes.has(codigoDesdeUrl)) {
+      yaAbiertoDesdeUrl = true;
+      seleccionar(codigoDesdeUrl);
+    }
   });
 }
 
@@ -297,6 +306,15 @@ $("boton-clave").addEventListener("click", () => {
   pintarEncabezado();
 });
 
+$("boton-copiar-link").addEventListener("click", async () => {
+  const campo = $("campo-link-examen");
+  try {
+    await navigator.clipboard.writeText(campo.value);
+  } catch {
+    campo.select();
+  }
+});
+
 function pintarEncabezado() {
   const codigo = estado.seleccionado;
   const info = estado.infoExamenes[codigo] ?? {};
@@ -304,6 +322,11 @@ function pintarEncabezado() {
   $("subtitulo-examen").textContent = nombreDe(codigo);
   const clave = info.clave_reingreso ?? info.pin_salida ?? null;
   $("boton-clave").textContent = clave === null ? "—" : claveVisible ? clave : "••••";
+  // Interconexión de pantallas (2026-11-04): de aquí a autoria/ para editar
+  // este mismo examen, y el link que el docente le da a sus estudiantes --
+  // antes solo existían por separado, cada uno había que armarlo a mano.
+  $("enlace-editar-examen").href = `../autoria/?codigo=${codigo}`;
+  $("campo-link-examen").value = `${new URL("../", location.href).href}?codigo=${codigo}`;
 }
 
 // ------------------------------------------------------------------ sesiones

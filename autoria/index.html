@@ -38,7 +38,7 @@
       Evaluación MINED <span>· Autoría</span>
     </div>
     <div class="barra-derecha">
-      <a href="../docente/" class="boton-texto">Panel en vivo</a>
+      <a href="../docente/" id="enlace-panel-vivo" class="boton-texto">Panel en vivo</a>
       <div id="usuario" class="usuario" hidden>
         <span id="correo-usuario"></span>
         <button id="boton-salir" type="button" class="boton-texto">Salir</button>
@@ -74,6 +74,14 @@
 
       <div id="editor-examen" hidden>
         <h1 id="titulo-examen"></h1>
+
+        <div class="enlace-compartir campo-medio">
+          <label>Link para que tus estudiantes entren directo
+            <input id="campo-link-examen" type="text" readonly />
+          </label>
+          <button id="boton-copiar-link" type="button" class="boton boton-secundario">Copiar link</button>
+          <span id="mensaje-link-copiado" class="tenue" hidden>¡Copiado!</span>
+        </div>
 
         <form id="form-examen" class="form-examen">
           <div class="fila-campos">
@@ -136,6 +144,40 @@
           <button type="submit" class="boton boton-primario">Guardar examen</button>
           <p id="mensaje-examen" class="tenue" hidden></p>
         </form>
+
+        <!-- Compartir / duplicar (2026-11-04): hasta ahora cada docente solo
+             veía y editaba sus propios exámenes, sin forma de pasarle uno a
+             un colega ni de reusar uno viejo como punto de partida de otro.
+             "Compartir" agrega al colega a `docentes` (coautoría real sobre
+             ESTE examen); "Duplicar" copia examen+preguntas+claves bajo un
+             código nuevo, siempre a nombre de quien la crea (las reglas
+             exigen que el creador se incluya a sí mismo) -- por eso un
+             colega que solo quiere "su propia copia" primero necesita que se
+             la compartan, entra con su cuenta, y ahí sí duplica. -->
+        <section class="compartir-docente">
+          <h2 class="titulo-seccion">Compartir con otro docente</h2>
+          <p class="tenue">Si agregas a un colega, también podrá ver y editar este examen desde su propia cuenta -- y usar "Duplicar examen" para crear su propia copia a partir de este.</p>
+          <div class="fila-campos">
+            <label>Correo del colega (@edu.gob.sv)
+              <input id="campo-colega" type="email" placeholder="colega@edu.gob.sv" />
+            </label>
+            <button id="boton-compartir-docente" type="button" class="boton boton-secundario">Compartir</button>
+          </div>
+          <p id="mensaje-compartir" class="mensaje-error" hidden></p>
+          <ul id="lista-docentes" class="lista-docentes"></ul>
+        </section>
+
+        <section class="duplicar-examen">
+          <h2 class="titulo-seccion">Usar como base de otro examen</h2>
+          <p class="tenue">Crea una copia de este examen, con las mismas preguntas, bajo un código nuevo -- para ti (p. ej. el siguiente trimestre) o para darle a un colega un punto de partida ya compartido con él.</p>
+          <div class="fila-campos">
+            <label>Código del nuevo examen
+              <input id="campo-duplicar-codigo" type="text" placeholder="EXAM203" maxlength="20" />
+            </label>
+            <button id="boton-duplicar" type="button" class="boton boton-secundario">Duplicar examen</button>
+          </div>
+          <p id="mensaje-duplicar" class="mensaje-error" hidden></p>
+        </section>
 
         <!-- Generar preguntas con IA (2026-11-03): a partir de un contenido
              (tema, párrafo, texto de lectura), Claude PROPONE preguntas --

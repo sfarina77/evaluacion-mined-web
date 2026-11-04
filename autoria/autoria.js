@@ -106,9 +106,22 @@ async function entrar(usuario) {
   const consulta = admin
     ? fs.collection(db, "examenes")
     : fs.query(fs.collection(db, "examenes"), fs.where("docentes", "array-contains", correo));
+  // Interconexión de pantallas (2026-11-04): un link como
+  // autoria/?codigo=EXAM202 llega aquí desde el panel docente (botón
+  // "Editar examen") -- en cuanto la lista de exámenes propios llegue de
+  // Firestore, si ese código es uno de los suyos, se abre solo. Si no es
+  // suyo (o no existe), no pasa nada más: las reglas de Firestore ya
+  // impiden ver lo ajeno, esto solo evita insistir en un código que nunca
+  // va a aparecer en la lista.
+  const codigoDesdeUrl = new URLSearchParams(location.search).get("codigo")?.trim().toUpperCase();
+  let yaAbiertoDesdeUrl = false;
   estado.desuscribirExamenes = fs.onSnapshot(consulta, (foto) => {
     estado.examenes = new Map(foto.docs.map((d) => [d.id, d.data()]));
     pintarExamenes();
+    if (codigoDesdeUrl && !yaAbiertoDesdeUrl && estado.examenes.has(codigoDesdeUrl)) {
+      yaAbiertoDesdeUrl = true;
+      seleccionar(codigoDesdeUrl);
+    }
   });
 
   // Biblioteca de contenidos: compartida entre todos los docentes/admins, no
@@ -123,6 +136,9 @@ async function entrar(usuario) {
   configurarRevision();
   configurarGenerador();
   configurarBiblioteca();
+  configurarEnlaceCompartir();
+  configurarCompartirDocente();
+  configurarDuplicar();
 }
 
 function limpiarSuscripciones() {
@@ -209,6 +225,10 @@ function seleccionar(codigo) {
   actualizarCampoListaEstudiantes();
   pintarExamenes();
 
+  $("campo-link-examen").value = `${new URL("../", location.href).href}?codigo=${codigo}`;
+  $("enlace-panel-vivo").href = `../docente/?codigo=${codigo}`;
+  pintarListaDocentes(datos.docentes ?? []);
+
   estado.desuscribirItems?.();
   const consulta = fs.query(fs.collection(db, "examenes", codigo, "items"), fs.orderBy("orden"));
   estado.desuscribirItems = fs.onSnapshot(consulta, (foto) => {
@@ -273,6 +293,127 @@ function configurarFormularioExamen() {
     } catch (error) {
       console.error("[autoria] no se pudo guardar el examen:", error);
       mensaje.textContent = "No se pudo guardar. ¿Tienes permiso sobre este código?";
+    }
+  });
+}
+
+// -------------------------------------------------------- compartir / duplicar
+
+function configurarEnlaceCompartir() {
+  $("boton-copiar-link").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText($("campo-link-examen").value);
+      $("mensaje-link-copiado").hidden = false;
+      setTimeout(() => ($("mensaje-link-copiado").hidden = true), 2000);
+    } catch {
+      $("campo-link-examen").select();
+    }
+  });
+}
+
+function pintarListaDocentes(docentes) {
+  $("lista-docentes").replaceChildren(
+    ...docentes.map((correo) => {
+      const quitar = el("button", { clase: "boton-texto", texto: "Quitar" });
+      quitar.type = "button";
+      quitar.addEventListener("click", () => quitarDocente(correo));
+      return el("li", { clase: "fila-docente" }, el("span", { texto: correo }), quitar);
+    }),
+  );
+}
+
+async function quitarDocente(correo) {
+  const { db, fs } = estado.n;
+  const codigo = estado.seleccionado;
+  const docentes = (estado.examenes.get(codigo)?.docentes ?? []).filter((c) => c !== correo);
+  try {
+    await fs.updateDoc(fs.doc(db, "examenes", codigo), { docentes, actualizadoPor: estado.correo });
+  } catch (error) {
+    console.error("[autoria] no se pudo quitar al docente:", error);
+    $("mensaje-compartir").textContent = "No se pudo quitar (¿intentaste quitarte a ti mismo?).";
+    $("mensaje-compartir").hidden = false;
+  }
+}
+
+function configurarCompartirDocente() {
+  $("boton-compartir-docente").addEventListener("click", async () => {
+    const { db, fs } = estado.n;
+    const mensaje = $("mensaje-compartir");
+    mensaje.hidden = false;
+    const correo = $("campo-colega").value.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) {
+      mensaje.textContent = "Correo inválido.";
+      return;
+    }
+    const codigo = estado.seleccionado;
+    const docentesActuales = estado.examenes.get(codigo)?.docentes ?? [];
+    if (docentesActuales.includes(correo)) {
+      mensaje.textContent = "Ese colega ya tiene acceso.";
+      return;
+    }
+    mensaje.textContent = "Compartiendo…";
+    try {
+      await fs.updateDoc(fs.doc(db, "examenes", codigo), {
+        docentes: [...docentesActuales, correo],
+        actualizadoPor: estado.correo,
+      });
+      $("campo-colega").value = "";
+      mensaje.textContent = `Compartido con ${correo}.`;
+    } catch (error) {
+      console.error("[autoria] no se pudo compartir el examen:", error);
+      mensaje.textContent = "No se pudo compartir.";
+    }
+  });
+}
+
+function configurarDuplicar() {
+  $("boton-duplicar").addEventListener("click", async () => {
+    const { db, fs } = estado.n;
+    const mensaje = $("mensaje-duplicar");
+    mensaje.hidden = false;
+    const nuevoCodigo = $("campo-duplicar-codigo").value.trim().toUpperCase();
+    if (!/^[A-Z0-9]{3,20}$/.test(nuevoCodigo)) {
+      mensaje.textContent = "El código debe tener entre 3 y 20 letras/números, sin espacios.";
+      return;
+    }
+    const codigoOrigen = estado.seleccionado;
+    mensaje.textContent = "Duplicando…";
+    try {
+      const existente = await fs.getDoc(fs.doc(db, "examenes", nuevoCodigo));
+      if (existente.exists()) {
+        mensaje.textContent = "Ya existe un examen con ese código.";
+        return;
+      }
+      const origen = estado.examenes.get(codigoOrigen) ?? {};
+      // No se copian `docentes` (el nuevo queda a nombre de quien duplica --
+      // las reglas de Firestore exigen que el creador se incluya a sí mismo)
+      // ni `lista_estudiantes` (es de un grupo de estudiantes específico, no
+      // tiene sentido heredarla a ciegas en el examen nuevo).
+      const { docentes, lista_estudiantes, ...resto } = origen;
+      await fs.setDoc(fs.doc(db, "examenes", nuevoCodigo), {
+        ...resto,
+        docentes: [estado.correo],
+        actualizadoPor: estado.correo,
+      });
+
+      const itemsOrigen = await fs.getDocs(fs.collection(db, "examenes", codigoOrigen, "items"));
+      for (const docItem of itemsOrigen.docs) {
+        const { actualizadoPor, ...datosItem } = docItem.data();
+        await fs.setDoc(fs.doc(db, "examenes", nuevoCodigo, "items", docItem.id), {
+          ...datosItem,
+          actualizadoPor: estado.correo,
+        });
+        const claveOrigen = await fs.getDoc(fs.doc(db, "examenes", codigoOrigen, "claves", docItem.id));
+        if (claveOrigen.exists()) {
+          await fs.setDoc(fs.doc(db, "examenes", nuevoCodigo, "claves", docItem.id), claveOrigen.data());
+        }
+      }
+
+      mensaje.textContent = `Listo: ${nuevoCodigo} creado con ${itemsOrigen.docs.length} pregunta(s).`;
+      $("campo-duplicar-codigo").value = "";
+    } catch (error) {
+      console.error("[autoria] no se pudo duplicar el examen:", error);
+      mensaje.textContent = "No se pudo duplicar.";
     }
   });
 }
